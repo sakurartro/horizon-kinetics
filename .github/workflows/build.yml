@@ -44,6 +44,8 @@ jobs:
           mkdir -p ~/horizon-src
           curl -sfL "https://codeload.github.com/horizon-rust/horizon/tar.gz/$HORIZON_REV" | tar -xz -C ~/horizon-src --strip-components=1
           printf '%s' "$HORIZON_REV" > ~/horizon-src/.horizon-revision
+          # horizon-mixins refuses links; the launcher leaves them out of the archive too.
+          find ~/horizon-src -type l -print -delete
 
       - name: Apply the bundle
         run: ~/mixins-bin/bin/horizon-mixins apply --workspace ~/horizon-src --mods native/mixins --out ~/stage
