@@ -4,7 +4,7 @@
 #   tools/play_ci.sh            # newest build
 #   tools/play_ci.sh RUN_ID     # a given run
 set -euo pipefail
-repo=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+repo=$(cd "$(dirname "$0")" && gh repo view --json nameWithOwner -q .nameWithOwner) # works from any folder
 run=${1:-$(gh run list -R "$repo" -w build -s success -L 1 --json databaseId -q '.[0].databaseId')}
 [ -n "$run" ] || { echo "no successful build yet: gh run list -R $repo" >&2; exit 1; }
 dir=~/.local/share/horizon-kinetics-ci/$run
