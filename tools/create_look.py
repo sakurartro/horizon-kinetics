@@ -1,27 +1,19 @@
 #!/usr/bin/env python3
-"""Builds a resource pack that gives Kinetics Create's look, from a Create jar you downloaded yourself.
+"""Builds a resource pack with Create's shaft and cogwheel models, from a Create jar you downloaded yourself.
 
     python3 tools/create_look.py ~/Downloads/create-1.21.1-6.0.10.jar
 
 Create exists for Minecraft 1.21.1 (NeoForge) at most; its block models and PNG textures still load in 26.3.
-The pack takes Create's shaft and cogwheel models and only the textures they use, and points Kinetics' part
-models at them. Create's assets are All Rights Reserved: the pack is for your own game, never share or commit it.
+The pack holds Create's own models (create:block/shaft, cogwheel, large_cogwheel) and only the textures they use.
+Horizon lays a mod's files over a resource pack's, so the pack can't replace Kinetics' models: the Kinetics
+native mod draws Create's models when they exist and its own otherwise.
+Create's assets are All Rights Reserved: the pack is for your own game, never share or commit it.
 Default output: the Horizon game folder's resourcepacks/kinetics-create-look.zip.
 """
 import argparse, json, pathlib, re, sys, zipfile
 
-# Kinetics model -> Create model (all built along the y axis, as Kinetics' own parts).
-PARTS = {
-    "shaft_part": "shaft",
-    "cogwheel_part": "cogwheel",
-    "large_cogwheel_part": "large_cogwheel",
-}
-# The blocks' own (invisible) models only give the breaking particles.
-PARTICLES = {
-    "shaft_block": "block/axis",
-    "cogwheel_block": "block/cogwheel",
-    "large_cogwheel_block": "block/large_cogwheel",
-}
+# Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis.
+MODELS = ["shaft", "cogwheel", "large_cogwheel"]
 PACK_FORMAT = [97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
 
 
@@ -82,12 +74,8 @@ def main():
         if f"assets/create/textures/{path}.png" not in names:
             print(f"warning: {a.jar.name} has no texture {name}", file=sys.stderr)
 
-    for ours, theirs in PARTS.items():
-        model(f"create:block/{theirs}")
-        files[f"assets/kinetics/models/block/{ours}.json"] = json.dumps({"parent": f"create:block/{theirs}"}).encode()
-    for ours, tex in PARTICLES.items():
-        texture(f"create:{tex}")
-        files[f"assets/kinetics/models/block/{ours}.json"] = json.dumps({"textures": {"particle": f"create:{tex}"}}).encode()
+    for name in MODELS:
+        model(f"create:block/{name}")
     files["pack.mcmeta"] = json.dumps({"pack": {
         "description": "Kinetics with Create's look (from your own Create jar; don't share)",
         "min_format": PACK_FORMAT, "max_format": PACK_FORMAT}}, indent=2).encode()
@@ -96,7 +84,7 @@ def main():
     with zipfile.ZipFile(a.out, "w", zipfile.ZIP_DEFLATED) as z:
         for path in sorted(files):
             z.writestr(path, files[path])
-    print(f"{a.out}: {len(files)} files. Turn it on in Options > Resource Packs, above Kinetics' mod.")
+    print(f"{a.out}: {len(files)} files. Turn it on in Options > Resource Packs.")
 
 
 if __name__ == "__main__":

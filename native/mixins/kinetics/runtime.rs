@@ -318,6 +318,23 @@ pub const PART_MODELS: [&str; 3] = [
     "kinetics:block/large_cogwheel_part",
 ];
 
+/// Create's own models: they exist only while the pack from `tools/create_look.py` is on (the game lays a
+/// mod's files over a resource pack's, so the pack can't replace `PART_MODELS`); drawn first, ours the fallback.
+pub const LOOK_MODELS: [&str; 3] = [
+    "create:block/shaft",
+    "create:block/cogwheel",
+    "create:block/large_cogwheel",
+];
+
+pub fn look_model(kind: Kind) -> Option<&'static str> {
+    match kind {
+        Kind::Shaft => Some(LOOK_MODELS[0]),
+        Kind::Cog => Some(LOOK_MODELS[1]),
+        Kind::LargeCog => Some(LOOK_MODELS[2]),
+        Kind::Source => None,
+    }
+}
+
 pub fn part_model(kind: Kind) -> Option<&'static str> {
     match kind {
         Kind::Shaft => Some(PART_MODELS[0]),

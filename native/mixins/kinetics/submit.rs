@@ -27,7 +27,10 @@ fn kinetics_submit(
     if let Some((turn, degrees)) = k::lay_along(axis) {
         draw.rotate_about(turn, degrees, centre);
     }
-    game.native_draw_model(draw, model, 0xFF_FFFF);
+    let look = k::look_model(kind).is_some_and(|m| game.native_draw_model(draw, m, 0xFF_FFFF));
+    if !look {
+        game.native_draw_model(draw, model, 0xFF_FFFF);
+    }
     draw.pop();
     if speed == 0.0 {
         draw.keep();
