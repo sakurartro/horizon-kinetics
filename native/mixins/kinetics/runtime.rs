@@ -344,6 +344,16 @@ pub fn part_model(kind: Kind) -> Option<&'static str> {
     }
 }
 
+/// The light a part is drawn with, packed as `draw.light` wants it (sky light * 16 in bits 0..8, block light *
+/// 16 in bits 8..16): the brightest `(block, sky)` of the samples. A solid block's own spot is dark (the
+/// log-based cogwheels drew black), so the caller samples it and its six neighbours.
+pub fn part_light(samples: impl IntoIterator<Item = (u8, u8)>) -> u32 {
+    let (block, sky) = samples
+        .into_iter()
+        .fold((0u8, 0u8), |(b, s), (b2, s2)| (b.max(b2), s.max(s2)));
+    (u32::from(sky) * 16) | ((u32::from(block) * 16) << 8)
+}
+
 pub fn axis_vector(axis: usize) -> [f32; 3] {
     let mut v = [0.0; 3];
     v[axis] = 1.0;
@@ -522,6 +532,16 @@ mod tests {
         assert_eq!(angle(1.0, 1200.0), 0.0);
         assert_eq!(angle(1.0, 300.0), 90.0);
         assert_eq!(angle(-16.0, 0.0), 0.0);
+    }
+
+    #[test]
+    fn a_part_takes_the_brightest_light_around_it() {
+        // Inside a solid block (0, 0); a neighbour has block light 5 and full sky light.
+        assert_eq!(
+            part_light([(0, 0), (5, 15), (2, 3)]),
+            (15 * 16) | ((5 * 16) << 8)
+        );
+        assert_eq!(part_light([]), 0);
     }
 
     #[test]

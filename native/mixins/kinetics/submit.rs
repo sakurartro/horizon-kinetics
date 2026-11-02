@@ -1,5 +1,6 @@
-// Draws a shaft or cogwheel turned to its axis and by its speed; one standing
-// still keeps its geometry, so it costs nothing each frame.
+// Draws a shaft or cogwheel turned to its axis and by its speed.
+// shortcut: no draw.keep() for parts standing still: kept geometry follows the block's own light, not
+// the neighbours' we use; add it back if frames drop with many parts.
 fn kinetics_submit(
     game: &crate::game::Game<'_>,
     pos: [i32; 3],
@@ -22,6 +23,8 @@ fn kinetics_submit(
     let ticks = draw.game_time as f64 + f64::from(draw.partial);
     let angle = k::angle(speed, ticks) + k::tooth_offset(kind, axis, pos);
     let centre = [0.5; 3];
+    let around = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    draw.light = k::part_light(around.map(|d| game.native_light([pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]])));
     draw.push();
     draw.rotate_about(k::axis_vector(axis), angle, centre);
     if let Some((turn, degrees)) = k::lay_along(axis) {
@@ -32,7 +35,4 @@ fn kinetics_submit(
         game.native_draw_model(draw, model, 0xFF_FFFF);
     }
     draw.pop();
-    if speed == 0.0 {
-        draw.keep();
-    }
 }
