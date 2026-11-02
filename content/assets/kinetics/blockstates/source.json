@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=x": { "model": "kinetics:block/source", "x": 90, "y": 90 },
+    "axis=y": { "model": "kinetics:block/source" },
+    "axis=z": { "model": "kinetics:block/source", "x": 90 }
+  }
+}

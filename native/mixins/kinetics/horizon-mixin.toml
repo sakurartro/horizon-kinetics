@@ -1,0 +1,88 @@
+[mod]
+id = "kinetics"
+version = "0.1.0"
+priority = 100
+
+# Pinned: it needs block entities on any template (hook points API 129) and
+# standalone models (API 151), newer than the Nightly of 2026-11-01 (API 80).
+# The launcher downloads this commit's source and builds the game on it.
+[compatibility]
+horizon_revision = "c5c8a33a8a3ec0091060096bdbaab25770778eaf"
+
+[[module]]
+id = "runtime"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics"
+source = "runtime.rs"
+
+# Shafts and cogwheels get a block entity holding their speed.
+[[injection]]
+id = "block-entity"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity"
+helper = "block_entity.rs"
+bindings = [
+  { name = "block", ty = "&str", value = "block" },
+  { name = "entity", ty = "&mut Option<(String, Compound)>", value = "&mut *entity" },
+]
+
+# A kinetic block placed, broken or turned: solve its network again.
+[[injection]]
+id = "block-changed"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_block_changed"
+helper = "block_changed.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "dimension", ty = "LevelDimension", value = "dimension" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "old", ty = "BlockStateId", value = "old" },
+  { name = "new", ty = "BlockStateId", value = "new" },
+]
+
+# At the end of each level's tick, the marked networks get their speeds.
+[[injection]]
+id = "settle"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "settle.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# Clients get the speed.
+[[injection]]
+id = "update-tag"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_update_tag"
+helper = "update_tag.rs"
+bindings = [
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "tag", ty = "&mut Option<Compound>", value = "&mut *tag" },
+]
+
+# The turning parts' models, baked beside the block models.
+[[injection]]
+id = "models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# Each frame: the part, turned by its speed.
+[[injection]]
+id = "submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]

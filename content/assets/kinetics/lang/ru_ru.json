@@ -1,0 +1,7 @@
+{
+  "block.kinetics.shaft": "Вал",
+  "block.kinetics.cogwheel": "Шестерня",
+  "block.kinetics.large_cogwheel": "Большая шестерня",
+  "block.kinetics.source": "Источник вращения (16 об/мин)",
+  "itemGroup.kinetics.kinetics": "Кинетика"
+}

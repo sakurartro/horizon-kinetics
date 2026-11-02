@@ -1,0 +1,8 @@
+id = "kinetics"
+name = "Kinetics"
+version = "0.1.0"
+description = "Shafts and cogwheels that turn, after Create's kinetics. The blocks; the native bundle in ../native makes them turn."
+authors = ["sakura"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]

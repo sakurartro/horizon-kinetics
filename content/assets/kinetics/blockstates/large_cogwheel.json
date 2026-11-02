@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=x": { "model": "kinetics:block/large_cogwheel_block" },
+    "axis=y": { "model": "kinetics:block/large_cogwheel_block" },
+    "axis=z": { "model": "kinetics:block/large_cogwheel_block" }
+  }
+}

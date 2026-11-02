@@ -1,0 +1,66 @@
+# Builds Horizon's game with the Kinetics bundle applied, as the launcher's native build does
+# (horizon-mixins apply, then cargo build --profile fast), and uploads the horizon-client binary.
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  HORIZON_REV: c5c8a33a8a3ec0091060096bdbaab25770778eaf # [compatibility] horizon_revision
+  MIXINS_REV: ddd9700b21997c95d95ac6ee5ecafe3830cf622a # the launcher's MIXINS_REV
+  RUST: 1.99.1 # the launcher's own toolchain
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      - name: System packages
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev pkg-config
+
+      - name: Rust
+        run: rustup toolchain install "$RUST" --profile minimal && rustup default "$RUST"
+
+      - name: Logic tests
+        run: cargo test --manifest-path native/Cargo.toml
+
+      - name: horizon-mixins
+        id: mixins
+        uses: actions/cache@v4
+        with:
+          path: ~/mixins-bin
+          key: mixins-${{ env.MIXINS_REV }}-${{ env.RUST }}
+      - if: steps.mixins.outputs.cache-hit != 'true'
+        run: cargo install --locked --git https://github.com/horizon-rust/horizon-mixins --rev "$MIXINS_REV" --root ~/mixins-bin horizon-mixins-cli
+
+      - name: Horizon source
+        run: |
+          mkdir -p ~/horizon-src
+          curl -sfL "https://codeload.github.com/horizon-rust/horizon/tar.gz/$HORIZON_REV" | tar -xz -C ~/horizon-src --strip-components=1
+          printf '%s' "$HORIZON_REV" > ~/horizon-src/.horizon-revision
+
+      - name: Apply the bundle
+        run: ~/mixins-bin/bin/horizon-mixins apply --workspace ~/horizon-src --mods native/mixins --out ~/stage
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "/home/runner/stage -> ${{ github.workspace }}/game-target"
+          key: ${{ env.HORIZON_REV }}
+
+      - name: Build the game
+        working-directory: /home/runner/stage
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/game-target
+        run: cargo build --locked --profile fast -p horizon-client --bin horizon-client
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horizon-client
+          path: game-target/fast/horizon-client
+          retention-days: 7

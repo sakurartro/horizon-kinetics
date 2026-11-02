@@ -1,0 +1,4 @@
+target/
+*.hmod
+*.hnmod
+*.zip

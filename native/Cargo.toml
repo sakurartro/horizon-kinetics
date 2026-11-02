@@ -1,0 +1,11 @@
+[package]
+name = "horizon-mod-kinetics"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "Shafts and cogwheels for Horizon: the rotation network logic and its tests."
+
+# The same file the bundle adds to the game as `game::kinetics`.
+[lib]
+path = "mixins/kinetics/runtime.rs"
