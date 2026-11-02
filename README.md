@@ -37,6 +37,26 @@ Native-бандл закреплён на коммите Horizon `c5c8a33` (hook
 Только ванильные текстуры 26.3 (андезит, полированный андезит, обтёсанный дуб/ель, доски, блок редстоуна):
 мод их не содержит, ссылается по имени. Ассетов Create здесь нет (они All Rights Reserved).
 
+### Вид Create (для себя)
+
+Модели и текстуры Create можно взять из своей копии Create: скрипт соберёт из jar ресурспак,
+который подменяет модели вала и шестерён Kinetics на модели Create.
+
+1. Скачай Create для **1.21.1, NeoForge** (новее Create не выходил; модели и PNG оттуда работают в 26.3):
+   https://modrinth.com/mod/create/versions?g=1.21.1&l=neoforge — файл `create-1.21.1-<версия>.jar`.
+2. Собери ресурспак (нужен Python 3):
+   ```sh
+   python3 tools/create_look.py ~/Downloads/create-1.21.1-6.0.10.jar
+   ```
+   Он ляжет в `~/.local/share/horizon/resourcepacks/kinetics-create-look.zip`.
+   Другая папка игры: `--out путь/kinetics-create-look.zip` (папка `resourcepacks/` рядом с `options.txt`).
+3. В игре: Options → Resource Packs → перенеси **kinetics-create-look** в активные (выше модов).
+
+Скрипт берёт из jar только модели `shaft`, `cogwheel`, `large_cogwheel` и текстуры, на которые они
+ссылаются. Пак собран из ассетов Create (All Rights Reserved): он только для твоей игры —
+не выкладывай его, не прикладывай к релизам и не коммить.
+Чтобы вернуть обычный вид, выключи пак в Resource Packs.
+
 ## Лицензия
 
 Код — MIT (`LICENSE`). Правила вращения портированы из Create (MIT, Copyright (c) The Create Team /
