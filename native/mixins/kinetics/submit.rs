@@ -12,6 +12,10 @@ fn kinetics_submit(
     use crate::game::kinetics as k;
     use horizon_world::nbt::{JavaString, Tag};
     let Some(kind) = k::kind_of(block) else { return };
+    // The cased parts are drawn by casing_submit.rs.
+    if crate::game::kinetics_casing::is_encased(block) {
+        return;
+    }
     let Some(model) = k::part_model(kind) else { return };
     let Some(axis) = game.native_block_state_property(state, "axis").and_then(k::axis_of) else {
         return;

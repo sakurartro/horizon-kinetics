@@ -7,7 +7,12 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
         return;
     }
     let speeds = k::solve(&changed, |p| {
-        k::node(&game.native_block(p), game.native_block_property(p, "axis").as_deref())
+        k::node_ends(
+            &game.native_block(p),
+            game.native_block_property(p, "axis").as_deref(),
+            game.native_block_property(p, "bottom_shaft").as_deref(),
+            game.native_block_property(p, "top_shaft").as_deref(),
+        )
     });
     let key = JavaString::from(k::SPEED_KEY);
     for (pos, speed) in speeds {

@@ -3,5 +3,9 @@
   "block.kinetics.cogwheel": "Cogwheel",
   "block.kinetics.large_cogwheel": "Large Cogwheel",
   "block.kinetics.source": "Rotation Source (16 RPM)",
+  "block.kinetics.andesite_casing": "Andesite Casing",
+  "block.kinetics.andesite_encased_shaft": "Andesite Encased Shaft",
+  "block.kinetics.andesite_encased_cogwheel": "Andesite Encased Cogwheel",
+  "block.kinetics.andesite_encased_large_cogwheel": "Andesite Encased Large Cogwheel",
   "itemGroup.kinetics.kinetics": "Kinetics"
 }
