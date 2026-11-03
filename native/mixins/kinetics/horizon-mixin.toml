@@ -601,3 +601,61 @@ bindings = [
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
+
+# The cuckoo clocks (`kinetics:cuckoo_clock`, `kinetics:mysterious_cuckoo_clock`, with a horizontal `facing`): their
+# rules are in clock.rs (module `kinetics_clock`), the injections below are their hooks. The solver treats them as
+# a consumer with its shaft at the back (runtime.rs `kind_of`, settle.rs).
+[[module]]
+id = "clock"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_clock"
+source = "clock.rs"
+
+# Placed with the back to a shaft beside it, else facing the player.
+[[injection]]
+id = "clock-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "clock_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+# Each tick of a level: the turning clocks chime, smoke and go off.
+[[injection]]
+id = "clock-tick"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "clock_tick.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# The clocks' parts, baked beside the block models.
+[[injection]]
+id = "clock-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "clock_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# Each frame: the body, shaft, hands, doors and figure.
+[[injection]]
+id = "clock-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "clock_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]

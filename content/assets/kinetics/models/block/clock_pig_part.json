@@ -1,0 +1,7 @@
+{
+  "textures": { "pig": "minecraft:block/pink_concrete" },
+  "elements": [
+    { "from": [-8.5, 10.5, 6.5], "to": [-2.5, 13.5, 9.5],
+      "faces": { "north": { "texture": "#pig" }, "south": { "texture": "#pig" }, "east": { "texture": "#pig" }, "west": { "texture": "#pig" }, "up": { "texture": "#pig" }, "down": { "texture": "#pig" } } }
+  ]
+}

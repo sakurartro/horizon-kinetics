@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "condition": { "type": "minecraft:survives_explosion" },
+      "entries": [{ "type": "minecraft:item", "name": "kinetics:cuckoo_clock" }],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "kinetics:blocks/cuckoo_clock"
+}

@@ -45,6 +45,11 @@ path = "mixins/kinetics/bracket.rs"
 name = "girder"
 path = "mixins/kinetics/girder.rs"
 
+# The cuckoo clocks' rules: also the module the bundle adds to the game as `game::kinetics_clock`.
+[[test]]
+name = "clock"
+path = "mixins/kinetics/clock.rs"
+
 # The rotation speed controller's pure rules, also added to the game as `game::kinetics_speed_controller`.
 [[test]]
 name = "speed_controller"

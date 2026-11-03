@@ -20,6 +20,8 @@ MODELS += ["cogwheel_shaftless", "large_cogwheel_shaftless", "shaft_half", "ande
 MODELS += [f"andesite_encased_{big}cogwheel{ends}" for big in ("", "large_")
            for ends in ("", "_top", "_bottom", "_top_bottom")]
 MODELS += ["hand_crank/handle"]  # crank.rs LOOK_MODELS (its shaft_half is the casing's)
+# The cuckoo clocks (clock.rs LOOK_MODELS).
+MODELS += [f"cuckoo_clock/{m}" for m in ("block", "hour_hand", "minute_hand", "left_door", "right_door", "pig", "creeper")]
 # The gearbox's and the split blocks' static models (gearbox.rs STATIC_LOOK, clutch.rs STATIC_LOOK_MODELS).
 MODELS += ["gearbox/block", "clutch/block", "clutch/block_powered", "gearshift/block", "gearshift/block_powered"]
 # The brass and copper casings (casing.rs); copper_casing is only a cube, native code doesn't ask for it yet.

@@ -66,6 +66,10 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
                 signal,
             );
         }
+        if crate::game::kinetics_clock::is_clock(&name) {
+            // A cuckoo clock: a shaft at its back, giving no speed.
+            return k::crank_node(&cell.borrow().native_block_property(p, "facing")?, 0);
+        }
         if name == crate::game::kinetics_crank::BLOCK {
             // A hand crank: its facing, and the speed its turner gives it.
             let turn = crate::game::kinetics_crank::speed(dimension, p);

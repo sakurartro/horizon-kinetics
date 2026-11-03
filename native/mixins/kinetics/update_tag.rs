@@ -23,5 +23,12 @@ fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     if let Some(value) = entity.nbt.get(&bracket) {
         out.insert(bracket, value.clone());
     }
+    // A cuckoo clock's animation and when it began.
+    for key in [crate::game::kinetics_clock::ANIM_KEY, crate::game::kinetics_clock::START_KEY] {
+        let key = JavaString::from(key);
+        if let Some(value) = entity.nbt.get(&key) {
+            out.insert(key, value.clone());
+        }
+    }
     *tag = Some(out);
 }
