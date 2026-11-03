@@ -66,6 +66,9 @@ pub enum Kind {
     /// The creative motor: its shaft is at one end of its axis only, `toward` (+1 / -1) the end, and it gives its
     /// setting `rpm` (signed, -256 to 256). `kind_of` can only name it: the facing and the setting are the block's.
     Motor { toward: i8, rpm: i16 },
+    /// Create's `PoweredShaftBlock`: a shaft (both ends) that is also a source, the output of an engine. It gives
+    /// `rpm` (signed along the axis, 0: no source, just a shaft); `kind_of` can only name it, the speed is the block entity's.
+    PoweredShaft { rpm: i16 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -90,6 +93,7 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "gearbox" => Some(Kind::Gearbox),
         "hand_crank" => Some(Kind::Crank { toward: 1, rpm: 0 }),
         "creative_motor" => Some(Kind::Motor { toward: 1, rpm: 16 }),
+        "powered_shaft" => Some(Kind::PoweredShaft { rpm: 0 }),
         _ => None,
     }
 }
@@ -208,6 +212,12 @@ pub fn crank_node(facing: &str, turn: i32) -> Option<Node> {
     Some(Node { kind: Kind::Crank { toward, rpm }, axis, shafts: [toward < 0, toward > 0] })
 }
 
+/// The powered shaft on `axis` ("x"/"y"/"z") giving `rpm`, its generator's speed (`PoweredShaftBlockEntity.generatedSpeed`).
+pub fn powered_shaft_node(axis: Option<&str>, rpm: i32) -> Option<Node> {
+    let rpm = rpm.clamp(-256, 256) as i16;
+    Some(Node { kind: Kind::PoweredShaft { rpm }, axis: axis_of(axis?)?, shafts: [true; 2] })
+}
+
 /// The speed a node gives its network; a motor set to 0 or a crank at rest gives none, so it doesn't fight another
 /// source.
 fn generated(n: Node) -> Option<f32> {
@@ -217,7 +227,7 @@ fn generated(n: Node) -> Option<f32> {
             let v = f32::from(rpm) * f32::from(toward);
             (v != 0.0).then_some(v)
         }
-        Kind::Crank { rpm, .. } => (rpm != 0).then_some(f32::from(rpm)),
+        Kind::Crank { rpm, .. } | Kind::PoweredShaft { rpm } => (rpm != 0).then_some(f32::from(rpm)),
         _ => None,
     }
 }
@@ -496,7 +506,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Motor { .. } | Kind::Crank { .. } | Kind::Gearbox | Kind::Clutch(_) | Kind::Gearshift(_))
+        Some(Kind::Shaft | Kind::PoweredShaft { .. } | Kind::Cog | Kind::LargeCog | Kind::Motor { .. } | Kind::Crank { .. } | Kind::Gearbox | Kind::Clutch(_) | Kind::Gearshift(_))
     )
 }
 
@@ -517,7 +527,7 @@ pub const LOOK_MODELS: [&str; 3] = [
 
 pub fn look_model(kind: Kind) -> Option<&'static str> {
     match kind {
-        Kind::Shaft => Some(LOOK_MODELS[0]),
+        Kind::Shaft | Kind::PoweredShaft { .. } => Some(LOOK_MODELS[0]),
         Kind::Cog => Some(LOOK_MODELS[1]),
         Kind::LargeCog => Some(LOOK_MODELS[2]),
         _ => None,
@@ -526,7 +536,7 @@ pub fn look_model(kind: Kind) -> Option<&'static str> {
 
 pub fn part_model(kind: Kind) -> Option<&'static str> {
     match kind {
-        Kind::Shaft => Some(PART_MODELS[0]),
+        Kind::Shaft | Kind::PoweredShaft { .. } => Some(PART_MODELS[0]),
         Kind::Cog => Some(PART_MODELS[1]),
         Kind::LargeCog => Some(PART_MODELS[2]),
         _ => None,
@@ -650,6 +660,24 @@ mod tests {
         ];
         let s = solve(&[[1, 0, 1]], world(&w));
         assert_eq!(s[&[0, 0, 0]], -8.0);
+    }
+
+    #[test]
+    fn a_powered_shaft_is_a_source_that_is_a_shaft_too() {
+        let run = |rpm: i32| {
+            let shaft = Node { kind: Shaft, axis: X, shafts: [true; 2] };
+            let w = [([1, 0, 0], powered_shaft_node(Some("x"), rpm).unwrap()), ([0, 0, 0], shaft), ([2, 0, 0], shaft)];
+            solve(&[[1, 0, 0]], |q| w.iter().find(|b| b.0 == q).map(|b| b.1))
+        };
+        // Both ends carry it, in its own sign; the setting is clamped.
+        let s = run(-64);
+        assert_eq!((s[&[0, 0, 0]], s[&[1, 0, 0]], s[&[2, 0, 0]]), (-64.0, -64.0, -64.0));
+        assert_eq!(run(999)[&[2, 0, 0]], 256.0);
+        // At 0 it is a plain shaft: no source, nothing turns.
+        assert_eq!(run(0).get(&[2, 0, 0]).copied().unwrap_or(0.0), 0.0);
+        assert_eq!(powered_shaft_node(Some("w"), 5), None);
+        assert_eq!(kind_of("kinetics:powered_shaft"), Some(PoweredShaft { rpm: 0 }));
+        assert!(has_block_entity("kinetics:powered_shaft"));
     }
 
     #[test]
