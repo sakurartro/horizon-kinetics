@@ -82,6 +82,14 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
             };
             return k::powered_shaft_node(cell.borrow().native_block_property(p, "axis").as_deref(), rpm);
         }
+        if name == crate::game::kinetics_speedometer::BLOCK {
+            // A speedometer: a shaft along the axis its facing and `axis_along_first` give.
+            use crate::game::kinetics_speedometer as sp;
+            let g = cell.borrow();
+            let facing = sp::dir_vec(&g.native_block_property(p, "facing")?)?;
+            let along = g.native_block_property(p, "axis_along_first").as_deref() == Some("true");
+            return k::node(&name, Some(["x", "y", "z"][sp::rotation_axis(facing, along)]));
+        }
         let controller = name == crate::game::kinetics_speed_controller::BLOCK;
         if name != crate::game::kinetics_motor::BLOCK && !controller {
             let g = cell.borrow();

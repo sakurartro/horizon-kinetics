@@ -32,7 +32,9 @@ MODELS += [f"encased_chain_drive/{c}" for c in _CHAIN]
 MODELS += [f"adjustable_chain_gearshift_{c}{p}" for c in _CHAIN for p in ("", "_powered")]
 # The brackets (bracket.rs): the datagen-ed, material-suffixed files (the plain ones have unresolved texture variables).
 MODELS += [f"bracket/{t}/{k}_{m}" for t in ("shaft", "cog") for k in ("ground", "wall") for m in ("wooden", "metal")]
-PACK_FORMAT = [97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
+# The speedometer (speedometer.rs LOOK_MODELS): the two bodies, the dial and the head.
+MODELS += ["gauge/base", "gauge/base_wall", "gauge/dial", "gauge/speedometer/head"]
+PACK_FORMAT =[97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
 
 
 def ref(name):

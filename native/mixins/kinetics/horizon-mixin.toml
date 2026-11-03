@@ -601,3 +601,74 @@ bindings = [
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
+
+# The speedometer. A new block `kinetics:speedometer` with a `facing` and `axis_along_first`: its rules are in
+# speedometer.rs (module `kinetics_speedometer`); the solver treats it as a shaft along the axis those give (runtime.rs
+# `kind_of`, settle.rs), and the goggles' box for it is in goggles_hud.rs.
+[[module]]
+id = "speedometer"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_speedometer"
+source = "speedometer.rs"
+
+# Placed on a shaft's end it is clicked on, else on the clicked face.
+[[injection]]
+id = "speedometer-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "speedometer_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+# Create's bodies, dial and head, baked beside the block models.
+[[injection]]
+id = "speedometer-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "speedometer_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# Each frame: the body, the turning shaft, the heads and their needles.
+[[injection]]
+id = "speedometer-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "speedometer_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
+
+# A comparator reads the needle.
+[[injection]]
+id = "speedometer-has-analog"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_has_analog_output"
+helper = "speedometer_has_analog.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "output", ty = "&mut bool", value = "&mut *output" },
+]
+
+[[injection]]
+id = "speedometer-analog"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_analog_output"
+helper = "speedometer_analog.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "output", ty = "&mut i32", value = "&mut *output" },
+]
