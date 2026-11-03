@@ -22,6 +22,16 @@ MODELS += [f"andesite_encased_{big}cogwheel{ends}" for big in ("", "large_")
 MODELS += ["hand_crank/handle"]  # crank.rs LOOK_MODELS (its shaft_half is the casing's)
 # The gearbox's and the split blocks' static models (gearbox.rs STATIC_LOOK, clutch.rs STATIC_LOOK_MODELS).
 MODELS += ["gearbox/block", "clutch/block", "clutch/block_powered", "gearshift/block", "gearshift/block_powered"]
+# The brass and copper casings (casing.rs); copper_casing is only a cube, native code doesn't ask for it yet.
+MODELS += ["brass_casing", "copper_casing", "encased_shaft/block_brass"]
+MODELS += [f"brass_encased_{big}cogwheel{ends}" for big in ("", "large_")
+           for ends in ("", "_top", "_bottom", "_top_bottom")]
+# The chain drives' static models (chain.rs static_look); only the gearshift has a _powered one in Create.
+_CHAIN = ["single", "middle_horizontal", "middle_vertical", "end_horizontal", "end_vertical"]
+MODELS += [f"encased_chain_drive/{c}" for c in _CHAIN]
+MODELS += [f"adjustable_chain_gearshift_{c}{p}" for c in _CHAIN for p in ("", "_powered")]
+# The brackets (bracket.rs): the datagen-ed, material-suffixed files (the plain ones have unresolved texture variables).
+MODELS += [f"bracket/{t}/{k}_{m}" for t in ("shaft", "cog") for k in ("ground", "wall") for m in ("wooden", "metal")]
 PACK_FORMAT = [97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
 
 
