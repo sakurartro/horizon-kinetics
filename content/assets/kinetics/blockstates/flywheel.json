@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=x": { "model": "kinetics:block/flywheel_block" },
+    "axis=y": { "model": "kinetics:block/flywheel_block" },
+    "axis=z": { "model": "kinetics:block/flywheel_block" }
+  }
+}

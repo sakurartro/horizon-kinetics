@@ -91,7 +91,7 @@ pub struct Node {
 /// The kind of block `name` (`kinetics:shaft`), none for any other block.
 pub fn kind_of(name: &str) -> Option<Kind> {
     match name.strip_prefix("kinetics:")? {
-        "shaft" | "andesite_encased_shaft" | "brass_encased_shaft" | "metal_girder_encased_shaft" => Some(Kind::Shaft),
+        "shaft" | "andesite_encased_shaft" | "brass_encased_shaft" | "metal_girder_encased_shaft" | "flywheel" => Some(Kind::Shaft),
         "cogwheel" | "andesite_encased_cogwheel" | "brass_encased_cogwheel" => Some(Kind::Cog),
         "large_cogwheel" | "andesite_encased_large_cogwheel" | "brass_encased_large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
@@ -1112,6 +1112,12 @@ mod tests {
         );
         assert_eq!(node("minecraft:stone", Some("y")), None);
         assert_eq!(node("kinetics:shaft", None), None);
+    }
+    #[test]
+    fn a_flywheel_is_a_shaft_for_the_network() {
+        let n = node("kinetics:flywheel", Some("x")).unwrap();
+        assert_eq!((n.kind, n.axis, n.shafts), (Kind::Shaft, 0, [true; 2]));
+        assert!(has_block_entity("kinetics:flywheel"));
     }
     #[test]
     fn a_controller_sets_the_cogwheel_above_it_from_either_side() {

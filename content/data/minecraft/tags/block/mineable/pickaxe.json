@@ -1,1 +1,1 @@
-{ "values": ["kinetics:shaft", "kinetics:source", "kinetics:gearbox", "kinetics:vertical_gearbox", "kinetics:hand_crank", "kinetics:metal_girder", "kinetics:metal_girder_encased_shaft", "kinetics:rotation_speed_controller", "kinetics:powered_shaft"] }
+{ "values": ["kinetics:shaft", "kinetics:source", "kinetics:gearbox", "kinetics:vertical_gearbox", "kinetics:hand_crank", "kinetics:metal_girder", "kinetics:metal_girder_encased_shaft", "kinetics:rotation_speed_controller", "kinetics:powered_shaft", "kinetics:flywheel"] }
