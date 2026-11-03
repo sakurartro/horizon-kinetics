@@ -82,3 +82,8 @@ path = "mixins/kinetics/speedometer.rs"
 [[test]]
 name = "water_wheel"
 path = "mixins/kinetics/water_wheel.rs"
+
+# The shaft placement helper's pure rules, also added to the game as `game::kinetics_assist`.
+[[test]]
+name = "assist"
+path = "mixins/kinetics/assist.rs"
