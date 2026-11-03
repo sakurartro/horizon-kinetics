@@ -78,3 +78,7 @@ path = "mixins/kinetics/stressometer.rs"
 [[test]]
 name = "speedometer"
 path = "mixins/kinetics/speedometer.rs"
+# The water wheels' pure rules (flow, score, large wheel body): also the module the bundle adds to the game as `game::kinetics_water_wheel`.
+[[test]]
+name = "water_wheel"
+path = "mixins/kinetics/water_wheel.rs"

@@ -103,7 +103,8 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "creative_motor" => Some(Kind::Motor { toward: 1, rpm: 16 }),
         "rotation_speed_controller" => Some(Kind::Controller { rpm: 16 }),
         "encased_chain_drive" | "adjustable_chain_gearshift" => Some(Kind::Chain { signal: 0, conn: 3, ends: [false; 2] }),
-        "powered_shaft" => Some(Kind::PoweredShaft { rpm: 0 }),
+        // The water wheels are shafts that generate: the speed is their block entity's (settle.rs).
+        "powered_shaft" | "water_wheel" | "large_water_wheel" => Some(Kind::PoweredShaft { rpm: 0 }),
         _ => None,
     }
 }

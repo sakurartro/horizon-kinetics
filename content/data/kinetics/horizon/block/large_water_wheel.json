@@ -1,0 +1,9 @@
+{
+  "template": "minecraft:stripped_oak_log",
+  "properties": {
+    "hardness": 2.0,
+    "explosion_resistance": 3.0,
+    "sounds": "minecraft:oak_planks"
+  },
+  "item": true
+}

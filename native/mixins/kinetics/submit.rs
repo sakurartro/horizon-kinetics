@@ -12,6 +12,10 @@ fn kinetics_submit(
     use crate::game::kinetics as k;
     use horizon_world::nbt::{JavaString, Tag};
     let Some(kind) = k::kind_of(block) else { return };
+    // The water wheels are drawn by water_wheel_submit.rs.
+    if crate::game::kinetics_water_wheel::is_wheel(block) {
+        return;
+    }
     // A clutch or gearshift: two shaft halves, each at its own speed (SplitShaftRenderer).
     if k::is_split(kind) {
         use crate::game::kinetics_clutch as c;
