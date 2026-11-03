@@ -66,6 +66,10 @@ pub enum Kind {
     /// The creative motor: its shaft is at one end of its axis only, `toward` (+1 / -1) the end, and it gives its
     /// setting `rpm` (signed, -256 to 256). `kind_of` can only name it: the facing and the setting are the block's.
     Motor { toward: i8, rpm: i16 },
+    /// An encased chain drive or adjustable chain gearshift: chained to its neighbours along the axis `conn` (3:
+    /// none), `ends` saying whether a chain leaves toward its negative / positive side. `signal` is the gearshift's
+    /// redstone signal (0 for a plain drive). `kind_of` can only name it: the rest is the block's state.
+    Chain { signal: u8, conn: u8, ends: [bool; 2] },
     /// Create's `PoweredShaftBlock`: a shaft (both ends) that is also a source, the output of an engine. It gives
     /// `rpm` (signed along the axis, 0: no source, just a shaft); `kind_of` can only name it, the speed is the block entity's.
     PoweredShaft { rpm: i16 },
@@ -93,6 +97,7 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "gearbox" => Some(Kind::Gearbox),
         "hand_crank" => Some(Kind::Crank { toward: 1, rpm: 0 }),
         "creative_motor" => Some(Kind::Motor { toward: 1, rpm: 16 }),
+        "encased_chain_drive" | "adjustable_chain_gearshift" => Some(Kind::Chain { signal: 0, conn: 3, ends: [false; 2] }),
         "powered_shaft" => Some(Kind::PoweredShaft { rpm: 0 }),
         _ => None,
     }
@@ -212,6 +217,40 @@ pub fn crank_node(facing: &str, turn: i32) -> Option<Node> {
     Some(Node { kind: Kind::Crank { toward, rpm }, axis, shafts: [toward < 0, toward > 0] })
 }
 
+/// The axis a chain drive is chained along, from its `axis` and `axis_along_first` (`ChainDriveBlock.getConnectionAxis`).
+pub fn chain_axis(axis: usize, along_first: bool) -> usize {
+    match (along_first, axis) {
+        (true, 0) => 1,
+        (true, _) => 0,
+        (false, 2) => 1,
+        (false, _) => 2,
+    }
+}
+
+/// The node for a chain drive or gearshift from its `axis`, `part` (`none` / `start` / `middle` / `end`),
+/// `axis_along_first` properties and its redstone `signal`.
+pub fn chain_node(name: &str, axis: Option<&str>, part: Option<&str>, first: Option<&str>, signal: i32) -> Option<Node> {
+    let mut n = node(name, axis)?;
+    if !matches!(n.kind, Kind::Chain { .. }) {
+        return None;
+    }
+    // A positive neighbour is chained to by a middle or start part, a negative one by a middle or end.
+    let ends = match part {
+        Some("middle") => [true, true],
+        Some("start") => [false, true],
+        Some("end") => [true, false],
+        _ => [false, false],
+    };
+    let conn = if ends == [false, false] { 3 } else { chain_axis(n.axis, first == Some("true")) as u8 };
+    n.kind = Kind::Chain { signal: signal.clamp(0, 15) as u8, conn, ends };
+    Some(n)
+}
+
+/// A chain gearshift's speed factor at a redstone `signal` (`ChainGearshiftBlockEntity.getModifierForSignal`).
+pub fn chain_factor(signal: u8) -> f32 {
+    if signal == 0 { 1.0 } else { 1.0 + (f32::from(signal) + 1.0) / 16.0 }
+}
+
 /// The powered shaft on `axis` ("x"/"y"/"z") giving `rpm`, its generator's speed (`PoweredShaftBlockEntity.generatedSpeed`).
 pub fn powered_shaft_node(axis: Option<&str>, rpm: i32) -> Option<Node> {
     let rpm = rpm.clamp(-256, 256) as i16;
@@ -279,6 +318,15 @@ pub fn modifier(from: Node, to: Node, diff: Pos) -> f32 {
         {
             return face_sign(from, a, diff[a] > 0) * face_sign(to, a, diff[a] < 0);
         }
+    }
+    // Chain drives chained side by side (`areBlocksConnected`): `from`'s speed over `to`'s modifier, times its own.
+    if let (Kind::Chain { signal: s, conn, ends }, Kind::Chain { signal: t, conn: other, .. }) = (from.kind, to.kind) {
+        let linked = conn < 3
+            && conn == other
+            && nonzero == [conn as usize]
+            && diff[conn as usize].abs() == 1
+            && ends[usize::from(diff[conn as usize] > 0)];
+        return if linked { chain_factor(s) / chain_factor(t) } else { 0.0 };
     }
     // Large <-> large, axes crossed (`isLargeToLargeGear`).
     if large(from) && large(to) && from.axis != to.axis {
@@ -506,7 +554,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::PoweredShaft { .. } | Kind::Cog | Kind::LargeCog | Kind::Motor { .. } | Kind::Crank { .. } | Kind::Gearbox | Kind::Clutch(_) | Kind::Gearshift(_))
+        Some(Kind::Shaft | Kind::PoweredShaft { .. } | Kind::Cog | Kind::LargeCog | Kind::Motor { .. } | Kind::Crank { .. } | Kind::Gearbox | Kind::Clutch(_) | Kind::Gearshift(_) | Kind::Chain { .. })
     )
 }
 
