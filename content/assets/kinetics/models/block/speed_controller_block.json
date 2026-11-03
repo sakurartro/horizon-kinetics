@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": { "body": "minecraft:block/polished_andesite", "rim": "minecraft:block/redstone_block", "particle": "minecraft:block/polished_andesite" },
+  "display": { "gui": { "rotation": [30, 45, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625] } },
+  "elements": [
+    { "from": [2, 2, 3], "to": [14, 14, 13],
+      "faces": {
+        "north": { "texture": "#body" }, "south": { "texture": "#body" },
+        "east": { "texture": "#body" }, "west": { "texture": "#body" },
+        "up": { "texture": "#rim" }, "down": { "texture": "#body" } } }
+  ]
+}

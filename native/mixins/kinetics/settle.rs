@@ -82,7 +82,8 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
             };
             return k::powered_shaft_node(cell.borrow().native_block_property(p, "axis").as_deref(), rpm);
         }
-        if name != crate::game::kinetics_motor::BLOCK {
+        let controller = name == crate::game::kinetics_speed_controller::BLOCK;
+        if name != crate::game::kinetics_motor::BLOCK && !controller {
             let g = cell.borrow();
             return k::node_ends(
                 &name,
@@ -91,7 +92,7 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
                 g.native_block_property(p, "top_shaft").as_deref(),
             );
         }
-        // A motor's end and its setting (saved in its block entity, 16 until set).
+        // A motor's end (or a controller's axis) and its setting (saved in its block entity, 16 until set).
         let rpm = match cell.borrow_mut().world.block_entities.get_mut(&(p[0], p[1], p[2])) {
             Some(BlockEntity::Mod(m)) => match m.nbt.get(&JavaString::from(k::RPM_KEY)) {
                 Some(Tag::Int(v)) => *v,
@@ -99,6 +100,9 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
             },
             _ => crate::game::kinetics_motor::DEFAULT_RPM,
         };
+        if controller {
+            return k::controller_node(&cell.borrow().native_block_property(p, "axis")?, rpm);
+        }
         let facing = cell.borrow().native_block_property(p, "facing")?;
         k::motor_node(&facing, rpm)
     });

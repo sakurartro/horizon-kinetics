@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "axis=z": { "model": "kinetics:block/speed_controller_block" },
+    "axis=x": { "model": "kinetics:block/speed_controller_block", "y": 90 }
+  }
+}
