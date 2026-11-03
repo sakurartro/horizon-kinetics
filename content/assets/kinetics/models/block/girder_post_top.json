@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": { "all": "minecraft:block/iron_block", "particle": "minecraft:block/iron_block" },
+  "elements": [
+    { "from": [4, 8, 4], "to": [12, 16, 12],
+      "faces": {
+        "north": { "texture": "#all" }, "south": { "texture": "#all" },
+        "east": { "texture": "#all" }, "west": { "texture": "#all" },
+        "up": { "texture": "#all" } } }
+  ]
+}
