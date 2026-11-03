@@ -14,5 +14,7 @@
   "block.kinetics.andesite_encased_cogwheel": "Шестерня в андезитовом корпусе",
   "block.kinetics.andesite_encased_large_cogwheel": "Большая шестерня в андезитовом корпусе",
   "item.kinetics.wrench": "Гаечный ключ",
+  "block.kinetics.metal_girder": "Металлическая балка",
+  "block.kinetics.metal_girder_encased_shaft": "Металлическая балка с валом",
   "itemGroup.kinetics.kinetics": "Кинетика"
 }
