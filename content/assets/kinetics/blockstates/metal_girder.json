@@ -1,0 +1,8 @@
+{
+  "multipart": [
+    { "when": { "beam": "x|xz" }, "apply": { "model": "kinetics:block/girder_beam_x" } },
+    { "when": { "beam": "z|xz" }, "apply": { "model": "kinetics:block/girder_beam_z" } },
+    { "when": { "top": "true" }, "apply": { "model": "kinetics:block/girder_post_top" } },
+    { "when": { "bottom": "true" }, "apply": { "model": "kinetics:block/girder_post_bottom" } }
+  ]
+}

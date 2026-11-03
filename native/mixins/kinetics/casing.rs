@@ -29,6 +29,7 @@
 
 /// The casing block, and the item that encases with it.
 pub const ANDESITE_CASING: &str = "kinetics:andesite_casing";
+pub const BRASS_CASING: &str = "kinetics:brass_casing";
 
 /// Whether encasing uses up the casing. Create's `tryEncase` does not shrink the stack, so neither do we; the
 /// cased block drops the bare shaft or cogwheel, never the casing (their loot tables).
@@ -40,10 +41,13 @@ pub const TOP_SHAFT: &str = "top_shaft";
 pub const BOTTOM_SHAFT: &str = "bottom_shaft";
 
 /// (bare block, casing item, cased block): `EncasingRegistry`'s variants.
-const ENCASINGS: [(&str, &str, &str); 3] = [
+const ENCASINGS: [(&str, &str, &str); 6] = [
     ("kinetics:shaft", ANDESITE_CASING, "kinetics:andesite_encased_shaft"),
     ("kinetics:cogwheel", ANDESITE_CASING, "kinetics:andesite_encased_cogwheel"),
     ("kinetics:large_cogwheel", ANDESITE_CASING, "kinetics:andesite_encased_large_cogwheel"),
+    ("kinetics:shaft", BRASS_CASING, "kinetics:brass_encased_shaft"),
+    ("kinetics:cogwheel", BRASS_CASING, "kinetics:brass_encased_cogwheel"),
+    ("kinetics:large_cogwheel", BRASS_CASING, "kinetics:brass_encased_large_cogwheel"),
 ];
 
 /// The block that `block` turns into when `item` is used on it (`EncasableBlock.tryEncase`), none if it doesn't.
@@ -55,7 +59,7 @@ pub fn encased_variant(block: &str, item: &str) -> Option<&'static str> {
 }
 
 pub fn is_casing(block: &str) -> bool {
-    block == ANDESITE_CASING
+    block == ANDESITE_CASING || block == BRASS_CASING
 }
 
 /// A block cased with a casing: a shaft or cogwheel inside it.
@@ -83,9 +87,9 @@ pub fn has_block_entity(block: &str) -> bool {
 /// halves come out of the ends that have one (`SHAFT_HALF`).
 pub fn spinner(block: &str) -> Option<(&'static str, &'static str)> {
     match block.strip_prefix("kinetics:")? {
-        "andesite_encased_shaft" => Some(("kinetics:block/shaft_part", "create:block/shaft")),
-        "andesite_encased_cogwheel" => Some((PART_MODELS[0], LOOK_MODELS[0])),
-        "andesite_encased_large_cogwheel" => Some((PART_MODELS[1], LOOK_MODELS[1])),
+        "andesite_encased_shaft" | "brass_encased_shaft" => Some(("kinetics:block/shaft_part", "create:block/shaft")),
+        "andesite_encased_cogwheel" | "brass_encased_cogwheel" => Some((PART_MODELS[0], LOOK_MODELS[0])),
+        "andesite_encased_large_cogwheel" | "brass_encased_large_cogwheel" => Some((PART_MODELS[1], LOOK_MODELS[1])),
         _ => None,
     }
 }
@@ -109,7 +113,7 @@ pub const LOOK_MODELS: [&str; 3] = [
 
 /// Create's static models of the casing blocks, drawn over our placeholders, the blockstate models, when the look
 /// pack is on; all built along y.
-pub const STATIC_LOOK_MODELS: [&str; 10] = [
+pub const STATIC_LOOK_MODELS: [&str; 20] = [
     "create:block/andesite_casing",
     "create:block/encased_shaft/block_andesite",
     "create:block/andesite_encased_cogwheel",
@@ -120,15 +124,31 @@ pub const STATIC_LOOK_MODELS: [&str; 10] = [
     "create:block/andesite_encased_large_cogwheel_top",
     "create:block/andesite_encased_large_cogwheel_bottom",
     "create:block/andesite_encased_large_cogwheel_top_bottom",
+    // The brass casing's, in the same order.
+    "create:block/brass_casing",
+    "create:block/encased_shaft/block_brass",
+    "create:block/brass_encased_cogwheel",
+    "create:block/brass_encased_cogwheel_top",
+    "create:block/brass_encased_cogwheel_bottom",
+    "create:block/brass_encased_cogwheel_top_bottom",
+    "create:block/brass_encased_large_cogwheel",
+    "create:block/brass_encased_large_cogwheel_top",
+    "create:block/brass_encased_large_cogwheel_bottom",
+    "create:block/brass_encased_large_cogwheel_top_bottom",
 ];
 
 /// Create's static model of `block`, with the shafts a cased cogwheel has at its ends.
 pub fn static_look(block: &str, bottom: bool, top: bool) -> Option<&'static str> {
-    let first = match block.strip_prefix("kinetics:")? {
-        "andesite_casing" => return Some(STATIC_LOOK_MODELS[0]),
-        "andesite_encased_shaft" => return Some(STATIC_LOOK_MODELS[1]),
-        "andesite_encased_cogwheel" => 2,
-        "andesite_encased_large_cogwheel" => 6,
+    let name = block.strip_prefix("kinetics:")?;
+    let (base, name) = match name.strip_prefix("brass_") {
+        Some(rest) => (10, rest),
+        None => (0, name.strip_prefix("andesite_")?),
+    };
+    let first = match name {
+        "casing" => return Some(STATIC_LOOK_MODELS[base]),
+        "encased_shaft" => return Some(STATIC_LOOK_MODELS[base + 1]),
+        "encased_cogwheel" => base + 2,
+        "encased_large_cogwheel" => base + 6,
         _ => return None,
     };
     // none, top, bottom, top and bottom
@@ -200,6 +220,21 @@ mod tests {
         let large = "kinetics:andesite_encased_large_cogwheel";
         assert_eq!(look(large, true, true), "create:block/andesite_encased_large_cogwheel_top_bottom");
         assert_eq!(look(large, false, false), "create:block/andesite_encased_large_cogwheel");
+    }
+
+    #[test]
+    fn brass_mirrors_andesite() {
+        assert_eq!(encased_variant("kinetics:cogwheel", BRASS_CASING), Some("kinetics:brass_encased_cogwheel"));
+        assert_eq!(encased_variant("kinetics:brass_encased_shaft", BRASS_CASING), None);
+        assert!(is_casing(BRASS_CASING) && is_encased("kinetics:brass_encased_shaft"));
+        assert!(is_encased_cog("kinetics:brass_encased_large_cogwheel"));
+        assert_eq!(static_look(BRASS_CASING, false, false), Some("create:block/brass_casing"));
+        assert_eq!(static_look("kinetics:brass_encased_shaft", false, false), Some("create:block/encased_shaft/block_brass"));
+        assert_eq!(
+            static_look("kinetics:brass_encased_large_cogwheel", true, true),
+            Some("create:block/brass_encased_large_cogwheel_top_bottom")
+        );
+        assert_eq!(spinner("kinetics:brass_encased_cogwheel").unwrap().1, LOOK_MODELS[0]);
     }
 
     #[test]

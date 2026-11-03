@@ -1,9 +1,9 @@
-// Applies what players asked of the creative motors (the wheel, the right button) to this level's motors, saves the
+// Applies what players asked of the creative motors and rotation speed controllers (the wheel, the right button) to this level's motors, saves the
 // setting in their block entities and has their networks solved again.
 fn kinetics_motor_apply(game: &mut crate::game::Game<'_>, dimension: &str) {
     use crate::game::{kinetics as k, kinetics_motor as m};
     use horizon_world::nbt::{JavaString, Tag};
-    let asked = m::take(|p| game.native_block(p) == m::BLOCK);
+    let asked = m::take(|p| game.native_block(p) == m::BLOCK || game.native_block(p) == crate::game::kinetics_speed_controller::BLOCK);
     if asked.is_empty() {
         return;
     }
