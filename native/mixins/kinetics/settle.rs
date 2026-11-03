@@ -2,6 +2,7 @@
 fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
     use crate::game::kinetics as k;
     use crate::game::kinetics_clutch as c;
+    use crate::game::kinetics_stress as st;
     use horizon_world::nbt::{JavaString, Tag};
     let mut changed = k::take(dimension);
     // A clutch or gearshift that was placed, or whose neighbour changed, follows its redstone signal.
@@ -33,7 +34,7 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
     }
     // The lookup reads the world, and a block entity can only be reached mutably: share the game through a cell.
     let cell = std::cell::RefCell::new(&mut *game);
-    let mut speeds = k::solve_halves(&changed, |p| {
+    let get = |p: [i32; 3]| -> Option<k::Node> {
         if detached.contains(&p) {
             return None;
         }
@@ -105,7 +106,30 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
         }
         let facing = cell.borrow().native_block_property(p, "facing")?;
         k::motor_node(&facing, rpm)
-    });
+    };
+    let (mut speeds, groups) = k::solve_groups(&changed, &get);
+    // Each network's capacity and stress; one that is overstressed stops (speed 0 everywhere), keeping the speed
+    // it would have as `theoretical_speed` (Create: `KineticNetwork.updateNetwork`, `KineticBlockEntity.getSpeed`).
+    let mut facts: Vec<([i32; 3], [(&'static str, f32); 4])> = Vec::new();
+    for group in &groups {
+        let ns = st::evaluate(
+            group,
+            |v| speeds[&v],
+            |p| get(p).and_then(k::generated),
+            |p| st::impact(&cell.borrow().native_block(p)),
+            |p| st::capacity(&cell.borrow().native_block(p)),
+        );
+        for &v in group {
+            if !facts.iter().any(|f| f.0 == v.0) {
+                facts.push((v.0, ns.entries(speeds[&v] + 0.0)));
+            }
+        }
+        if ns.overstressed() {
+            for v in group {
+                speeds.insert(*v, 0.0);
+            }
+        }
+    }
     for &p in &detached {
         speeds.insert((p, 0), 0.0);
         speeds.insert((p, 1), 0.0);
@@ -120,6 +144,22 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
             }
             be.nbt.insert(key.clone(), tag.clone());
             true
+        });
+        if wrote == Some(true) && !moved.contains(&pos) {
+            moved.push(pos);
+        }
+    }
+    for (pos, entries) in facts {
+        let wrote = game.native_with_mod_block_entity(pos, |be| {
+            let mut changed = false;
+            for (name, value) in entries {
+                let (key, tag) = (JavaString::from(name), Tag::Float(value.to_bits()));
+                if be.nbt.get(&key) != Some(&tag) {
+                    be.nbt.insert(key, tag);
+                    changed = true;
+                }
+            }
+            changed
         });
         if wrote == Some(true) && !moved.contains(&pos) {
             moved.push(pos);

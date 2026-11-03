@@ -54,3 +54,8 @@ path = "mixins/kinetics/speed_controller.rs"
 [[test]]
 name = "chain"
 path = "mixins/kinetics/chain.rs"
+
+# Create's stress rules, also added to the game as `game::kinetics_stress`; its tests are their own target.
+[[test]]
+name = "stress"
+path = "mixins/kinetics/stress.rs"

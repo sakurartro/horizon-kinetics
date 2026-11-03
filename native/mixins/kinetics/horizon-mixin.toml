@@ -400,6 +400,13 @@ file = "crates/horizon-client/src/game.rs"
 name = "kinetics_goggles"
 source = "goggles.rs"
 
+# Create's stress rules (capacity, impact, overstress): their rules have no game types.
+[[module]]
+id = "stress"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_stress"
+source = "stress.rs"
+
 # Goggles on the head: the speed of the kinetic block under the crosshair.
 [[injection]]
 id = "goggles-hud"

@@ -18,6 +18,13 @@ fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     if let Some(rpm) = entity.nbt.get(&rpm_key) {
         out.insert(rpm_key, rpm.clone());
     }
+    // The network's capacity and stress (the goggles show them).
+    for name in crate::game::kinetics_stress::KEYS {
+        let key = JavaString::from(name);
+        if let Some(value) = entity.nbt.get(&key) {
+            out.insert(key, value.clone());
+        }
+    }
     // A bracket around a shaft or cogwheel.
     let bracket = JavaString::from(crate::game::kinetics_bracket::BRACKET_KEY);
     if let Some(value) = entity.nbt.get(&bracket) {
