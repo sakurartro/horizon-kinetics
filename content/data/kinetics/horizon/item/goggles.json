@@ -1,0 +1,5 @@
+{ "template": "minecraft:leather_helmet", "max_stack_size": 1,
+  "components": {
+    "minecraft:equippable": { "slot": "head" },
+    "!minecraft:max_damage": {}, "!minecraft:damage": {}, "!minecraft:attribute_modifiers": {},
+    "!minecraft:repairable": {}, "!minecraft:enchantable": {}, "!minecraft:dyed_color": {} } }
