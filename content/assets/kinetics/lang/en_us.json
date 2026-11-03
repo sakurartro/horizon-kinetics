@@ -3,5 +3,6 @@
   "block.kinetics.cogwheel": "Cogwheel",
   "block.kinetics.large_cogwheel": "Large Cogwheel",
   "block.kinetics.source": "Rotation Source (16 RPM)",
+  "block.kinetics.hand_crank": "Hand Crank",
   "itemGroup.kinetics.kinetics": "Kinetics"
 }

@@ -7,7 +7,13 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
         return;
     }
     let speeds = k::solve(&changed, |p| {
-        k::node(&game.native_block(p), game.native_block_property(p, "axis").as_deref())
+        let name = game.native_block(p);
+        if name == crate::game::kinetics_crank::BLOCK {
+            // A hand crank: its facing, and the speed its turner gives it.
+            let turn = crate::game::kinetics_crank::speed(dimension, p);
+            return k::crank_node(&game.native_block_property(p, "facing")?, turn);
+        }
+        k::node(&name, game.native_block_property(p, "axis").as_deref())
     });
     let key = JavaString::from(k::SPEED_KEY);
     for (pos, speed) in speeds {

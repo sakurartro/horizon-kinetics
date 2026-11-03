@@ -52,6 +52,9 @@ pub enum Kind {
     Cog,
     LargeCog,
     Source,
+    /// The hand crank: its shaft is at one end of its axis only, `toward` (+1 / -1) the end, and it gives `rpm`
+    /// (signed along the axis, 0 while nobody turns it). `kind_of` can only name it: the facing and the speed are the block's.
+    Crank { toward: i8, rpm: i16 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -68,6 +71,7 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "cogwheel" => Some(Kind::Cog),
         "large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
+        "hand_crank" => Some(Kind::Crank { toward: 1, rpm: 0 }),
         _ => None,
     }
 }
@@ -88,6 +92,39 @@ pub fn node(name: &str, axis: Option<&str>) -> Option<Node> {
         kind: kind_of(name)?,
         axis: axis_of(axis?)?,
     })
+}
+
+/// The hand crank at an axis, from its block state's `facing` (the way the handle points) and the speed
+/// `turn` gave it (`HandCrankBlockEntity.getGeneratedSpeed`: `convertToDirection`, positive along a positive facing).
+pub fn crank_node(facing: &str, turn: i32) -> Option<Node> {
+    let (axis, out) = match facing {
+        "down" => (1, -1),
+        "up" => (1, 1),
+        "north" => (2, -1),
+        "south" => (2, 1),
+        "west" => (0, -1),
+        "east" => (0, 1),
+        _ => return None,
+    };
+    let rpm = (turn.clamp(-256, 256) * out) as i16;
+    Some(Node { kind: Kind::Crank { toward: -out as i8, rpm }, axis })
+}
+
+/// The speed a node gives its network; a crank at rest gives none, so it doesn't fight another source.
+fn generated(n: Node) -> Option<f32> {
+    match n.kind {
+        Kind::Source => Some(SOURCE_SPEED),
+        Kind::Crank { rpm, .. } => (rpm != 0).then_some(f32::from(rpm)),
+        _ => None,
+    }
+}
+
+/// Whether the node has a shaft end on the side `d` (+1 / -1 along its axis): everything has both, a crank one.
+fn open_end(n: Node, d: i32) -> bool {
+    match n.kind {
+        Kind::Crank { toward, .. } => i32::from(toward) == d,
+        _ => true,
+    }
 }
 
 fn small(n: Node) -> bool {
@@ -131,7 +168,7 @@ pub fn modifier(from: Node, to: Node, diff: Pos) -> f32 {
     // shaft through its own axis (`hasShaftTowards`).
     if nonzero.len() == 1 {
         let a = nonzero[0];
-        if diff[a].abs() == 1 && from.axis == a && to.axis == a {
+        if diff[a].abs() == 1 && from.axis == a && to.axis == a && open_end(from, diff[a]) && open_end(to, -diff[a]) {
             return 1.0;
         }
     }
@@ -228,8 +265,8 @@ pub fn solve(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Pos,
         let mut speed: HashMap<Pos, f32> = HashMap::new();
         let mut queue: VecDeque<Pos> = VecDeque::new();
         for &(p, n) in &nodes {
-            if n.kind == Kind::Source {
-                speed.insert(p, SOURCE_SPEED);
+            if let Some(v) = generated(n) {
+                speed.insert(p, v);
                 queue.push_back(p);
             }
         }
@@ -307,7 +344,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog)
+        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Crank { .. })
     )
 }
 
@@ -331,7 +368,7 @@ pub fn look_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(LOOK_MODELS[0]),
         Kind::Cog => Some(LOOK_MODELS[1]),
         Kind::LargeCog => Some(LOOK_MODELS[2]),
-        Kind::Source => None,
+        Kind::Source | Kind::Crank { .. } => None,
     }
 }
 
@@ -340,7 +377,7 @@ pub fn part_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(PART_MODELS[0]),
         Kind::Cog => Some(PART_MODELS[1]),
         Kind::LargeCog => Some(PART_MODELS[2]),
-        Kind::Source => None,
+        Kind::Source | Kind::Crank { .. } => None,
     }
 }
 
@@ -525,6 +562,51 @@ mod tests {
         ];
         let s = solve(&[[0, 0, 0]], world(&w));
         assert_eq!(s[&[1, 1, 0]].abs(), 16.0);
+    }
+
+    #[test]
+    fn a_crank_turns_the_shaft_at_its_back_and_nothing_else() {
+        // Handle up, shaft down into the wall: the crank at the origin gives +32 along y.
+        let crank = |facing, turn| (crank_node(facing, turn).unwrap(), [0, 0, 0]);
+        let (c, p) = crank("up", 32);
+        assert_eq!(c.kind, Kind::Crank { toward: -1, rpm: 32 });
+        let w = |q: Pos| {
+            if q == p {
+                Some(c)
+            } else if q == [0, -1, 0] || q == [0, 1, 0] || q == [1, 0, 0] {
+                Some(Node { kind: Shaft, axis: if q[0] == 1 { X } else { Y } })
+            } else {
+                None
+            }
+        };
+        let s = solve(&[p], w);
+        assert_eq!(s[&[0, -1, 0]], 32.0);
+        // The handle's side and a shaft beside it get nothing.
+        assert_eq!(s[&[0, 1, 0]], 0.0);
+        assert_eq!(s.get(&[1, 0, 0]).copied().unwrap_or(0.0), 0.0);
+    }
+
+    #[test]
+    fn a_crank_follows_its_facing_and_rests_without_locking() {
+        // Facing down, the speed flips along y; north and west too (negative facing).
+        assert_eq!(crank_node("down", 32).unwrap().kind, Kind::Crank { toward: 1, rpm: -32 });
+        assert_eq!(crank_node("east", -32).unwrap().kind, Kind::Crank { toward: -1, rpm: -32 });
+        assert_eq!(crank_node("north", 32).unwrap().axis, Z);
+        assert_eq!(crank_node("sideways", 32), None);
+        // At rest it is no source: the source behind it drives it.
+        let w = [
+            ([0, 0, 0], Source, X),
+            ([1, 0, 0], Shaft, X),
+        ];
+        // Facing east, its shaft end is toward -x: beside the shaft at x = 1.
+        let rest = crank_node("east", 0).unwrap();
+        assert_eq!(rest.kind, Kind::Crank { toward: -1, rpm: 0 });
+        let get = |p: Pos| if p == [2, 0, 0] { Some(rest) } else { world(&w)(p) };
+        assert_eq!(solve(&[[1, 0, 0]], get)[&[2, 0, 0]], 16.0);
+        // Facing west, the handle side is toward the shaft: not connected.
+        let back = crank_node("west", 0).unwrap();
+        let get = |p: Pos| if p == [2, 0, 0] { Some(back) } else { world(&w)(p) };
+        assert_eq!(solve(&[[1, 0, 0]], get).get(&[2, 0, 0]).copied().unwrap_or(0.0), 0.0);
     }
 
     #[test]
