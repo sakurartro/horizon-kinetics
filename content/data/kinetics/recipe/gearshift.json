@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "kinetics:andesite_casing",
+    "kinetics:cogwheel",
+    "minecraft:redstone"
+  ],
+  "result": {
+    "id": "kinetics:gearshift",
+    "count": 1
+  }
+}

@@ -6,5 +6,11 @@ fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     }
     let key = JavaString::from(crate::game::kinetics::SPEED_KEY);
     let speed = entity.nbt.get(&key).cloned().unwrap_or(Tag::Float(0f32.to_bits()));
-    *tag = Some(Compound::from([(key, speed)]));
+    let mut out = Compound::from([(key, speed)]);
+    // A clutch or gearshift has a speed for each half.
+    let pos_key = JavaString::from(crate::game::kinetics_clutch::SPEED_POS_KEY);
+    if let Some(speed) = entity.nbt.get(&pos_key) {
+        out.insert(pos_key, speed.clone());
+    }
+    *tag = Some(out);
 }

@@ -1,0 +1,9 @@
+{
+  "template": "minecraft:stripped_oak_log",
+  "state_properties": {
+    "powered": {
+      "type": "boolean"
+    }
+  },
+  "item": true
+}

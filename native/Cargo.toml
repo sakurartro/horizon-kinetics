@@ -9,3 +9,8 @@ description = "Shafts and cogwheels for Horizon: the rotation network logic and 
 # The same file the bundle adds to the game as `game::kinetics`.
 [lib]
 path = "mixins/kinetics/runtime.rs"
+
+# clutch.rs is a module of the bundle like runtime.rs, with its tests in a target of their own.
+[[test]]
+name = "clutch"
+path = "mixins/kinetics/clutch.rs"

@@ -86,3 +86,23 @@ bindings = [
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
+
+# The clutch and the gearshift: their redstone and drawing rules are a module of their own.
+[[module]]
+id = "clutch"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_clutch"
+source = "clutch.rs"
+
+# A neighbour of a clutch or gearshift changed (a lever, a wire): its signal is read at the end of the tick.
+[[injection]]
+id = "clutch-neighbor"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_neighbor_changed"
+helper = "clutch_neighbor.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "dimension", ty = "LevelDimension", value = "dimension" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+]

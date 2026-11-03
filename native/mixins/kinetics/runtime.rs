@@ -52,6 +52,10 @@ pub enum Kind {
     Cog,
     LargeCog,
     Source,
+    /// Two shaft halves along the axis; the flag is `powered` (cut). `kind_of` says unpowered.
+    Clutch(bool),
+    /// As the clutch, but powered turns the far half the other way.
+    Gearshift(bool),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -68,6 +72,8 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "cogwheel" => Some(Kind::Cog),
         "large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
+        "clutch" => Some(Kind::Clutch(false)),
+        "gearshift" => Some(Kind::Gearshift(false)),
         _ => None,
     }
 }
@@ -88,6 +94,18 @@ pub fn node(name: &str, axis: Option<&str>) -> Option<Node> {
         kind: kind_of(name)?,
         axis: axis_of(axis?)?,
     })
+}
+
+/// The node for a block name, its `axis` and its `powered` property (a clutch or gearshift's).
+pub fn node_split(name: &str, axis: Option<&str>, powered: Option<&str>) -> Option<Node> {
+    let mut n = node(name, axis)?;
+    let on = powered == Some("true");
+    n.kind = match n.kind {
+        Kind::Clutch(_) => Kind::Clutch(on),
+        Kind::Gearshift(_) => Kind::Gearshift(on),
+        k => k,
+    };
+    Some(n)
 }
 
 fn small(n: Node) -> bool {
@@ -174,21 +192,58 @@ fn add(p: Pos, d: Pos) -> Pos {
     [p[0] + d[0], p[1] + d[1], p[2] + d[2]]
 }
 
-/// The connected neighbours of the node at `p`, each with the factor from
-/// `p`'s speed to its own.
-fn links(p: Pos, n: Node, get: &impl Fn(Pos) -> Option<Node>) -> Vec<(Pos, f32)> {
+/// A solver vertex: a position and, for a split block (clutch, gearshift), which of its two halves
+/// (0 toward -axis, 1 toward +axis); 0 for every other block.
+pub type Vertex = (Pos, u8);
+
+/// Whether blocks of `kind` are two shaft halves with a switchable link between them.
+pub fn is_split(kind: Kind) -> bool {
+    matches!(kind, Kind::Clutch(_) | Kind::Gearshift(_))
+}
+
+/// The factor from one half of a split block to the other: a powered clutch cuts, a powered
+/// gearshift reverses (`ClutchBlockEntity` / `GearshiftBlockEntity.getRotationSpeedModifier`).
+pub fn through(kind: Kind) -> f32 {
+    match kind {
+        Kind::Clutch(true) => 0.0,
+        Kind::Gearshift(true) => -1.0,
+        _ => 1.0,
+    }
+}
+
+/// The half of `m` that a neighbour stepping `d` to reach it meets.
+fn entry_half(m: Node, d: Pos) -> u8 {
+    u8::from(is_split(m.kind) && d[m.axis] < 0)
+}
+
+/// The connected neighbours of the vertex `v` (node `n`), each with the factor from
+/// `v`'s speed to its own.
+fn links(v: Vertex, n: Node, get: &impl Fn(Pos) -> Option<Node>) -> Vec<(Vertex, f32)> {
+    let (p, half) = v;
     let mut out = Vec::new();
-    for d in OFFSETS {
+    // A split half touches only the neighbour past its own face, and its other half.
+    let mut unit = [0; 3];
+    let dirs: &[Pos] = if is_split(n.kind) {
+        let f = through(n.kind);
+        if f != 0.0 {
+            out.push(((p, 1 - half), f));
+        }
+        unit[n.axis] = if half == 0 { -1 } else { 1 };
+        std::slice::from_ref(&unit)
+    } else {
+        &OFFSETS
+    };
+    for &d in dirs {
         let q = add(p, d);
         let Some(m) = get(q) else { continue };
         let f = modifier(n, m, d);
         if f != 0.0 {
-            out.push((q, f));
+            out.push(((q, entry_half(m, d)), f));
         } else {
             // A one-sided rule (Create checks both ways): use the inverse.
             let back = modifier(m, n, [-d[0], -d[1], -d[2]]);
             if back != 0.0 {
-                out.push((q, 1.0 / back));
+                out.push(((q, entry_half(m, d)), 1.0 / back));
             }
         }
     }
@@ -199,7 +254,21 @@ fn links(p: Pos, n: Node, get: &impl Fn(Pos) -> Option<Node>) -> Vec<(Pos, f32)>
 /// kinetic or not any more) and gives every node in them its speed. A network
 /// with no source, or whose speeds disagree somewhere (two sources fighting,
 /// a loop of gears that can't turn), stands still: speed 0 for all its nodes.
+/// A split block's speed is its -axis half's; `solve_halves` has both.
 pub fn solve(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Pos, f32> {
+    let mut out = HashMap::new();
+    for ((p, half), v) in solve_halves(changed, get) {
+        if half == 0 {
+            out.insert(p, v);
+        } else {
+            out.entry(p).or_insert(v);
+        }
+    }
+    out
+}
+
+/// `solve` with a speed for each half of a split block: `(pos, 0)` toward -axis, `(pos, 1)` toward +axis.
+pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Vertex, f32> {
     let mut out = HashMap::new();
     let mut starts: Vec<Pos> = Vec::new();
     for &c in changed {
@@ -207,63 +276,66 @@ pub fn solve(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Pos,
         starts.extend(OFFSETS.iter().map(|&d| add(c, d)));
     }
     for s in starts {
-        if out.contains_key(&s) {
-            continue;
-        }
         let Some(n) = get(s) else { continue };
-        // Gather the network.
-        let mut nodes: Vec<(Pos, Node)> = vec![(s, n)];
-        let mut seen: HashSet<Pos> = HashSet::from([s]);
-        let mut i = 0;
-        while i < nodes.len() && nodes.len() < MAX_NODES {
-            let (p, n) = nodes[i];
-            i += 1;
-            for (q, _) in links(p, n, &get) {
-                if seen.insert(q) {
-                    nodes.push((q, get(q).expect("linked node exists")));
-                }
+        for h in 0..if is_split(n.kind) { 2 } else { 1 } {
+            let start = (s, h);
+            if out.contains_key(&start) {
+                continue;
             }
-        }
-        // Spread the sources' speed.
-        let mut speed: HashMap<Pos, f32> = HashMap::new();
-        let mut queue: VecDeque<Pos> = VecDeque::new();
-        for &(p, n) in &nodes {
-            if n.kind == Kind::Source {
-                speed.insert(p, SOURCE_SPEED);
-                queue.push_back(p);
-            }
-        }
-        let mut locked = false;
-        while let Some(p) = queue.pop_front() {
-            let n = get(p).expect("queued node exists");
-            let v = speed[&p];
-            for (q, f) in links(p, n, &get) {
-                if !seen.contains(&q) {
-                    continue; // past the cap
-                }
-                let want = v * f;
-                match speed.get(&q) {
-                    Some(&have) if (have - want).abs() > 1e-4 * want.abs().max(1.0) => {
-                        locked = true;
-                    }
-                    Some(_) => {}
-                    None => {
-                        speed.insert(q, want);
-                        queue.push_back(q);
+            // Gather the network.
+            let mut nodes: Vec<(Vertex, Node)> = vec![(start, n)];
+            let mut seen: HashSet<Vertex> = HashSet::from([start]);
+            let mut i = 0;
+            while i < nodes.len() && nodes.len() < MAX_NODES {
+                let (v, n) = nodes[i];
+                i += 1;
+                for (q, _) in links(v, n, &get) {
+                    if seen.insert(q) {
+                        nodes.push((q, get(q.0).expect("linked node exists")));
                     }
                 }
             }
-            if locked {
-                break;
+            // Spread the sources' speed.
+            let mut speed: HashMap<Vertex, f32> = HashMap::new();
+            let mut queue: VecDeque<Vertex> = VecDeque::new();
+            for &(v, n) in &nodes {
+                if n.kind == Kind::Source {
+                    speed.insert(v, SOURCE_SPEED);
+                    queue.push_back(v);
+                }
             }
-        }
-        for (p, _) in nodes {
-            let v = if locked {
-                0.0
-            } else {
-                speed.get(&p).copied().unwrap_or(0.0)
-            };
-            out.insert(p, v + 0.0); // no -0.0: its bits would read as a change
+            let mut locked = false;
+            while let Some(v) = queue.pop_front() {
+                let n = get(v.0).expect("queued node exists");
+                let sv = speed[&v];
+                for (q, f) in links(v, n, &get) {
+                    if !seen.contains(&q) {
+                        continue; // past the cap
+                    }
+                    let want = sv * f;
+                    match speed.get(&q) {
+                        Some(&have) if (have - want).abs() > 1e-4 * want.abs().max(1.0) => {
+                            locked = true;
+                        }
+                        Some(_) => {}
+                        None => {
+                            speed.insert(q, want);
+                            queue.push_back(q);
+                        }
+                    }
+                }
+                if locked {
+                    break;
+                }
+            }
+            for (v, _) in nodes {
+                let sv = if locked {
+                    0.0
+                } else {
+                    speed.get(&v).copied().unwrap_or(0.0)
+                };
+                out.insert(v, sv + 0.0); // no -0.0: its bits would read as a change
+            }
         }
     }
     out
@@ -307,7 +379,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog)
+        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Clutch(_) | Kind::Gearshift(_))
     )
 }
 
@@ -331,7 +403,7 @@ pub fn look_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(LOOK_MODELS[0]),
         Kind::Cog => Some(LOOK_MODELS[1]),
         Kind::LargeCog => Some(LOOK_MODELS[2]),
-        Kind::Source => None,
+        _ => None,
     }
 }
 
@@ -340,7 +412,7 @@ pub fn part_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(PART_MODELS[0]),
         Kind::Cog => Some(PART_MODELS[1]),
         Kind::LargeCog => Some(PART_MODELS[2]),
-        Kind::Source => None,
+        _ => None,
     }
 }
 
@@ -525,6 +597,119 @@ mod tests {
         ];
         let s = solve(&[[0, 0, 0]], world(&w));
         assert_eq!(s[&[1, 1, 0]].abs(), 16.0);
+    }
+
+    fn half_speeds(w: &[(Pos, Kind, usize)], changed: Pos) -> HashMap<Vertex, f32> {
+        solve_halves(&[changed], world(w))
+    }
+
+    #[test]
+    fn an_unpowered_clutch_or_gearshift_passes_the_speed_on() {
+        for split in [Clutch(false), Gearshift(false)] {
+            let w = [
+                ([0, 0, 0], Source, X),
+                ([1, 0, 0], split, X),
+                ([2, 0, 0], Shaft, X),
+            ];
+            let s = half_speeds(&w, [1, 0, 0]);
+            assert_eq!(s[&([1, 0, 0], 0)], 16.0);
+            assert_eq!(s[&([1, 0, 0], 1)], 16.0);
+            assert_eq!(s[&([2, 0, 0], 0)], 16.0);
+        }
+    }
+
+    #[test]
+    fn a_powered_clutch_cuts_what_is_past_it() {
+        let w = [
+            ([0, 0, 0], Source, X),
+            ([1, 0, 0], Clutch(true), X),
+            ([2, 0, 0], Shaft, X),
+        ];
+        let s = half_speeds(&w, [1, 0, 0]);
+        assert_eq!(s[&([1, 0, 0], 0)], 16.0);
+        assert_eq!(s[&([1, 0, 0], 1)], 0.0);
+        assert_eq!(s[&([2, 0, 0], 0)], 0.0);
+        assert_eq!(s[&([0, 0, 0], 0)], 16.0);
+    }
+
+    #[test]
+    fn a_powered_gearshift_reverses_what_is_past_it_from_either_side() {
+        let w = [
+            ([0, 0, 0], Source, X),
+            ([1, 0, 0], Gearshift(true), X),
+            ([2, 0, 0], Shaft, X),
+        ];
+        let s = half_speeds(&w, [1, 0, 0]);
+        assert_eq!(s[&([1, 0, 0], 0)], 16.0);
+        assert_eq!(s[&([1, 0, 0], 1)], -16.0);
+        assert_eq!(s[&([2, 0, 0], 0)], -16.0);
+        // The source on the +x side: the -x half is the far one.
+        let w = [
+            ([3, 0, 0], Source, X),
+            ([2, 0, 0], Gearshift(true), X),
+            ([1, 0, 0], Shaft, X),
+        ];
+        let s = half_speeds(&w, [2, 0, 0]);
+        assert_eq!(s[&([2, 0, 0], 1)], 16.0);
+        assert_eq!(s[&([2, 0, 0], 0)], -16.0);
+        assert_eq!(s[&([1, 0, 0], 0)], -16.0);
+    }
+
+    #[test]
+    fn a_powered_clutch_keeps_two_networks_apart_and_a_powered_gearshift_makes_them_fight() {
+        let between = |split| {
+            [
+                ([0, 0, 0], Source, X),
+                ([1, 0, 0], split, X),
+                ([2, 0, 0], Source, X),
+            ]
+        };
+        let s = half_speeds(&between(Clutch(true)), [1, 0, 0]);
+        assert_eq!(s[&([0, 0, 0], 0)], 16.0);
+        assert_eq!(s[&([2, 0, 0], 0)], 16.0);
+        let s = half_speeds(&between(Gearshift(true)), [1, 0, 0]);
+        assert_eq!(s[&([0, 0, 0], 0)], 0.0);
+        assert_eq!(s[&([2, 0, 0], 0)], 0.0);
+        assert_eq!(s[&([1, 0, 0], 1)], 0.0);
+    }
+
+    #[test]
+    fn a_split_block_joins_only_along_its_axis() {
+        let w = [
+            ([0, 0, 0], Source, Y),
+            ([0, 1, 0], Shaft, Y),
+            ([0, 2, 0], Clutch(false), X),
+            ([1, 2, 0], Shaft, X),
+        ];
+        let s = half_speeds(&w, [0, 2, 0]);
+        assert_eq!(s[&([0, 2, 0], 0)], 0.0);
+        assert_eq!(s[&([1, 2, 0], 0)], 0.0);
+    }
+
+    #[test]
+    fn a_powered_gearshift_in_a_cogwheel_train_reverses_the_far_side() {
+        let w = [
+            ([0, 0, 0], Source, Y),
+            ([0, 1, 0], Gearshift(true), Y),
+            ([0, 2, 0], Cog, Y),
+            ([1, 2, 0], Cog, Y),
+        ];
+        let s = half_speeds(&w, [0, 1, 0]);
+        assert_eq!(s[&([0, 2, 0], 0)], -16.0);
+        assert_eq!(s[&([1, 2, 0], 0)], 16.0);
+    }
+
+    #[test]
+    fn split_blocks_are_named_and_powered_from_properties() {
+        assert_eq!(
+            node_split("kinetics:clutch", Some("x"), Some("true")),
+            Some(Node { kind: Clutch(true), axis: 0 })
+        );
+        assert_eq!(
+            node_split("kinetics:gearshift", Some("y"), Some("false")),
+            Some(Node { kind: Gearshift(false), axis: 1 })
+        );
+        assert!(has_block_entity("kinetics:clutch") && has_block_entity("kinetics:gearshift"));
     }
 
     #[test]

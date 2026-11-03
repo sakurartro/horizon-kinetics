@@ -1,0 +1,6 @@
+{
+  "parent": "kinetics:block/split_base",
+  "textures": {
+    "plate": "minecraft:block/andesite"
+  }
+}
