@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds a resource pack with Create's shaft and cogwheel models, from a Create jar you downloaded yourself.
+"""Builds a resource pack with Create's shaft, cogwheel and andesite casing models, from a Create jar you downloaded yourself.
 
     python3 tools/create_look.py ~/Downloads/create-1.21.1-6.0.10.jar
 
@@ -14,6 +14,11 @@ import argparse, json, pathlib, re, sys, zipfile
 
 # Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis.
 MODELS = ["shaft", "cogwheel", "large_cogwheel"]
+# The andesite casing's (casing.rs LOOK_MODELS, STATIC_LOOK_MODELS): the cased parts' turning parts, and the static
+# models drawn over the placeholders; the cogwheels' have a variant per shaft end.
+MODELS += ["cogwheel_shaftless", "large_cogwheel_shaftless", "shaft_half", "andesite_casing", "encased_shaft/block_andesite"]
+MODELS += [f"andesite_encased_{big}cogwheel{ends}" for big in ("", "large_")
+           for ends in ("", "_top", "_bottom", "_top_bottom")]
 PACK_FORMAT = [97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
 
 
