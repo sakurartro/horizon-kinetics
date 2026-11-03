@@ -1,0 +1,33 @@
+// The wrench: a right click on a kinetic block turns its axis about the clicked face, sneaking picks it up.
+// A turned block is a block change like any other: its network is solved again by `kinetics_block_changed`.
+// shortcut: no break event for other mods (Create posts one), no turn/remove sounds, and only our own blocks
+// are wrenchable (Create's wrench_pickup tag of vanilla redstone parts is left out).
+fn kinetics_wrench(
+    game: &mut crate::game::Game<'_>,
+    stack: &ItemStack,
+    pos: [i32; 3],
+    face: [i32; 3],
+    claimed: &mut bool,
+) {
+    use crate::game::{kinetics as k, kinetics_wrench as w};
+    if *claimed || &*stack.item != w::WRENCH || game.block_action_restricted(pos) {
+        return;
+    }
+    let block = game.native_block(pos);
+    let axis = game.native_block_property(pos, "axis");
+    let sneaking = game.keys.contains(&crate::game::KeyCode::ShiftLeft);
+    match w::action(k::kind_of(&block).is_some(), sneaking, axis.as_deref().and_then(k::axis_of), face) {
+        w::Action::Nothing => return,
+        w::Action::Rotate(value) => {
+            game.native_set_block_property_with(pos, "axis", value, 3);
+        }
+        w::Action::Remove => {
+            // The block's item goes to the player's inventory (nothing in creative); a full one drops it.
+            let drop = !game.creative && game.native_give_items(&block, 1) == 0;
+            let at = horizon_core::position::BlockPos::new(pos[0], pos[1], pos[2]);
+            game.with_level(|b, level, ticks| b.destroy_block(level, ticks, at, drop));
+            let _ = game.process_level_events();
+        }
+    }
+    *claimed = true;
+}

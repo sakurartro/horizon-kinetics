@@ -9,3 +9,8 @@ description = "Shafts and cogwheels for Horizon: the rotation network logic and 
 # The same file the bundle adds to the game as `game::kinetics`.
 [lib]
 path = "mixins/kinetics/runtime.rs"
+
+# The wrench's choices: also the module the bundle adds to the game as `game::kinetics_wrench`.
+[[test]]
+name = "wrench"
+path = "mixins/kinetics/wrench_logic.rs"
