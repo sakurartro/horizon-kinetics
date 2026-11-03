@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": { "B": "kinetics:cuckoo_clock", "C": "minecraft:gunpowder" },
+  "pattern": [" C ", "CBC", " C "],
+  "result": { "id": "kinetics:mysterious_cuckoo_clock", "count": 1 }
+}

@@ -1,0 +1,17 @@
+{
+  "template": "minecraft:glass",
+  "properties": { "hardness": 2.0, "explosion_resistance": 3.0, "sounds": "minecraft:oak_planks" },
+  "state_properties": {
+    "facing": { "type": "enum", "values": ["north", "east", "south", "west"] }
+  },
+  "shapes": {
+    "property": "facing",
+    "values": {
+      "north": [[0.0625, 0.0, 0.0625, 0.9375, 1.1875, 0.9375]],
+      "east": [[0.0625, 0.0, 0.0625, 0.9375, 1.1875, 0.9375]],
+      "south": [[0.0625, 0.0, 0.0625, 0.9375, 1.1875, 0.9375]],
+      "west": [[0.0625, 0.0, 0.0625, 0.9375, 1.1875, 0.9375]]
+    }
+  },
+  "item": true
+}

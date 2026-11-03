@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "kinetics:block/clock_block" },
+    "facing=east": { "model": "kinetics:block/clock_block" },
+    "facing=south": { "model": "kinetics:block/clock_block" },
+    "facing=west": { "model": "kinetics:block/clock_block" }
+  }
+}
