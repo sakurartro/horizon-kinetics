@@ -107,6 +107,62 @@ bindings = [
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
 
+# The hand crank. A new block `kinetics:hand_crank` with a `facing`: the rules are in crank.rs (module
+# `kinetics_crank`), the injections below are its hooks; the solver reads its speed in settle.rs.
+[[module]]
+id = "crank"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_crank"
+source = "crank.rs"
+
+# The right button on it turns it (held: the click repeats), sneaking turns it the other way.
+[[injection]]
+id = "crank-click"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_right_click_block"
+helper = "crank_click.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "canceled", ty = "&mut bool", value = "&mut *canceled" },
+]
+
+# Each tick of a level: turns that ran out stop, turned cranks click.
+[[injection]]
+id = "crank-tick"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "crank_tick.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# The crank's turning part, baked beside the block models.
+[[injection]]
+id = "crank-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "crank_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# Each frame: the crank's shaft and handle.
+[[injection]]
+id = "crank-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "crank_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
+
 # The creative motor. A new block `kinetics:creative_motor` with a `facing`: the rules are in motor.rs (module
 # `kinetics_motor`), the injections below are its hooks. Players' changes of its speed are queued and applied at the end
 # of the level's tick (motor_apply.rs), and the solver reads the setting from the block entity (settle.rs).

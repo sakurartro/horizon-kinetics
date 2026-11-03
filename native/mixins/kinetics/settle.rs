@@ -10,6 +10,11 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
     let cell = std::cell::RefCell::new(&mut *game);
     let speeds = k::solve(&changed, |p| {
         let name = cell.borrow().native_block(p);
+        if name == crate::game::kinetics_crank::BLOCK {
+            // A hand crank: its facing, and the speed its turner gives it.
+            let turn = crate::game::kinetics_crank::speed(dimension, p);
+            return k::crank_node(&cell.borrow().native_block_property(p, "facing")?, turn);
+        }
         if name != crate::game::kinetics_motor::BLOCK {
             let g = cell.borrow();
             return k::node_ends(
