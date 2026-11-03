@@ -1,0 +1,54 @@
+{
+  "variants": {
+    "axis_along_first=false,facing=down": {
+      "model": "kinetics:block/gauge_base",
+      "x": 180
+    },
+    "axis_along_first=false,facing=east": {
+      "model": "kinetics:block/gauge_base_wall"
+    },
+    "axis_along_first=false,facing=north": {
+      "model": "kinetics:block/gauge_base_wall",
+      "x": 90,
+      "y": 270
+    },
+    "axis_along_first=false,facing=south": {
+      "model": "kinetics:block/gauge_base_wall",
+      "x": 90,
+      "y": 90
+    },
+    "axis_along_first=false,facing=up": {
+      "model": "kinetics:block/gauge_base"
+    },
+    "axis_along_first=false,facing=west": {
+      "model": "kinetics:block/gauge_base_wall",
+      "y": 180
+    },
+    "axis_along_first=true,facing=down": {
+      "model": "kinetics:block/gauge_base",
+      "x": 180,
+      "y": 90
+    },
+    "axis_along_first=true,facing=east": {
+      "model": "kinetics:block/gauge_base_wall",
+      "x": 90
+    },
+    "axis_along_first=true,facing=north": {
+      "model": "kinetics:block/gauge_base_wall",
+      "y": 270
+    },
+    "axis_along_first=true,facing=south": {
+      "model": "kinetics:block/gauge_base_wall",
+      "y": 90
+    },
+    "axis_along_first=true,facing=up": {
+      "model": "kinetics:block/gauge_base",
+      "y": 90
+    },
+    "axis_along_first=true,facing=west": {
+      "model": "kinetics:block/gauge_base_wall",
+      "x": 90,
+      "y": 180
+    }
+  }
+}

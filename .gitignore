@@ -2,3 +2,4 @@ target/
 *.hmod
 *.hnmod
 *.zip
+__pycache__/

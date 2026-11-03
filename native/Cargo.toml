@@ -64,3 +64,7 @@ path = "mixins/kinetics/stress.rs"
 [[test]]
 name = "stressometer"
 path = "mixins/kinetics/stressometer.rs"
+# The speedometer's pure rules, also added to the game as `game::kinetics_speedometer`; its tests are their own target.
+[[test]]
+name = "speedometer"
+path = "mixins/kinetics/speedometer.rs"
