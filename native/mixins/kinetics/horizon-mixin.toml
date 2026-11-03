@@ -949,3 +949,16 @@ bindings = [
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
+
+# A cogwheel is placed on the axis of the clicked face.
+[[injection]]
+id = "cog-placement"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "cog_placement.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
