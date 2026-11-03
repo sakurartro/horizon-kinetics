@@ -1,1 +1,6 @@
-{ "model": { "type": "minecraft:model", "model": "kinetics:block/shaft_part" } }
+{
+ "model": {
+  "type": "minecraft:model",
+  "model": "kinetics:block/shaft_item"
+ }
+}

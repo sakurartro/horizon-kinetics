@@ -1,1 +1,6 @@
-{ "model": { "type": "minecraft:model", "model": "kinetics:block/crank_part" } }
+{
+ "model": {
+  "type": "minecraft:model",
+  "model": "kinetics:block/crank_item"
+ }
+}
