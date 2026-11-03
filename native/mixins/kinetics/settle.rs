@@ -2,6 +2,7 @@
 fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
     use crate::game::kinetics as k;
     use crate::game::kinetics_clutch as c;
+    use crate::game::kinetics_stress as st;
     use horizon_world::nbt::{JavaString, Tag};
     let mut changed = k::take(dimension);
     // A clutch or gearshift that was placed, or whose neighbour changed, follows its redstone signal.
@@ -33,7 +34,7 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
     }
     // The lookup reads the world, and a block entity can only be reached mutably: share the game through a cell.
     let cell = std::cell::RefCell::new(&mut *game);
-    let mut speeds = k::solve_halves(&changed, |p| {
+    let get = |p: [i32; 3]| -> Option<k::Node> {
         if detached.contains(&p) {
             return None;
         }
@@ -66,10 +67,28 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
                 signal,
             );
         }
+        if crate::game::kinetics_clock::is_clock(&name) {
+            // A cuckoo clock: a shaft at its back, giving no speed.
+            return k::crank_node(&cell.borrow().native_block_property(p, "facing")?, 0);
+        }
         if name == crate::game::kinetics_crank::BLOCK {
             // A hand crank: its facing, and the speed its turner gives it.
             let turn = crate::game::kinetics_crank::speed(dimension, p);
             return k::crank_node(&cell.borrow().native_block_property(p, "facing")?, turn);
+        }
+        if crate::game::kinetics_water_wheel::is_wheel(&name) {
+            // A water wheel: a generator on its axis, at the speed its flow score (saved in its block entity) gives.
+            use crate::game::kinetics_water_wheel as w;
+            let score = match cell.borrow_mut().world.block_entities.get_mut(&(p[0], p[1], p[2])) {
+                Some(BlockEntity::Mod(m)) => match m.nbt.get(&JavaString::from(w::FLOW_KEY)) {
+                    Some(Tag::Int(v)) => *v,
+                    _ => 0,
+                },
+                _ => 0,
+            };
+            let g = cell.borrow();
+            let axis = w::axis_index(&g.native_block_property(p, if name == w::LARGE { "axis" } else { "facing" })?)?;
+            return k::powered_shaft_node(Some(["x", "y", "z"][axis]), w::generated(score, w::size(&name)));
         }
         if name == "kinetics:powered_shaft" {
             // A powered shaft: its generator's speed, saved in its block entity (0 until set).
@@ -81,6 +100,22 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
                 _ => 0,
             };
             return k::powered_shaft_node(cell.borrow().native_block_property(p, "axis").as_deref(), rpm);
+        }
+        if name == crate::game::kinetics_stressometer::BLOCK {
+            // A stressometer: a shaft along the axis its facing and `axis_along_first` give.
+            use crate::game::kinetics_stressometer as sm;
+            let g = cell.borrow();
+            let facing = sm::dir_vec(&g.native_block_property(p, "facing")?)?;
+            let along = g.native_block_property(p, "axis_along_first").as_deref() == Some("true");
+            return k::node(&name, Some(["x", "y", "z"][sm::rotation_axis(facing, along)]));
+        }
+        if name == crate::game::kinetics_speedometer::BLOCK {
+            // A speedometer: a shaft along the axis its facing and `axis_along_first` give.
+            use crate::game::kinetics_speedometer as sp;
+            let g = cell.borrow();
+            let facing = sp::dir_vec(&g.native_block_property(p, "facing")?)?;
+            let along = g.native_block_property(p, "axis_along_first").as_deref() == Some("true");
+            return k::node(&name, Some(["x", "y", "z"][sp::rotation_axis(facing, along)]));
         }
         let controller = name == crate::game::kinetics_speed_controller::BLOCK;
         if name != crate::game::kinetics_motor::BLOCK && !controller {
@@ -105,7 +140,30 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
         }
         let facing = cell.borrow().native_block_property(p, "facing")?;
         k::motor_node(&facing, rpm)
-    });
+    };
+    let (mut speeds, groups) = k::solve_groups(&changed, &get);
+    // Each network's capacity and stress; one that is overstressed stops (speed 0 everywhere), keeping the speed
+    // it would have as `theoretical_speed` (Create: `KineticNetwork.updateNetwork`, `KineticBlockEntity.getSpeed`).
+    let mut facts: Vec<([i32; 3], [(&'static str, f32); 4])> = Vec::new();
+    for group in &groups {
+        let ns = st::evaluate(
+            group,
+            |v| speeds[&v],
+            |p| get(p).and_then(k::generated),
+            |p| st::impact(&cell.borrow().native_block(p)),
+            |p| st::capacity(&cell.borrow().native_block(p)),
+        );
+        for &v in group {
+            if !facts.iter().any(|f| f.0 == v.0) {
+                facts.push((v.0, ns.entries(speeds[&v] + 0.0)));
+            }
+        }
+        if ns.overstressed() {
+            for v in group {
+                speeds.insert(*v, 0.0);
+            }
+        }
+    }
     for &p in &detached {
         speeds.insert((p, 0), 0.0);
         speeds.insert((p, 1), 0.0);
@@ -125,7 +183,26 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
             moved.push(pos);
         }
     }
+    for (pos, entries) in facts {
+        let wrote = game.native_with_mod_block_entity(pos, |be| {
+            let mut changed = false;
+            for (name, value) in entries {
+                let (key, tag) = (JavaString::from(name), Tag::Float(value.to_bits()));
+                if be.nbt.get(&key) != Some(&tag) {
+                    be.nbt.insert(key, tag);
+                    changed = true;
+                }
+            }
+            changed
+        });
+        if wrote == Some(true) && !moved.contains(&pos) {
+            moved.push(pos);
+        }
+    }
     for pos in moved {
         game.native_block_entity_sync(pos);
+        if game.native_block(pos) == crate::game::kinetics_stressometer::BLOCK {
+            game.native_update_output_neighbors(dimension, pos);
+        }
     }
 }

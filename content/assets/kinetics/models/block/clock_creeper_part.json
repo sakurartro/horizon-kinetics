@@ -1,0 +1,7 @@
+{
+  "textures": { "creeper": "minecraft:block/lime_concrete" },
+  "elements": [
+    { "from": [-8.5, 10, 7], "to": [-2.5, 14, 9],
+      "faces": { "north": { "texture": "#creeper" }, "south": { "texture": "#creeper" }, "east": { "texture": "#creeper" }, "west": { "texture": "#creeper" }, "up": { "texture": "#creeper" }, "down": { "texture": "#creeper" } } }
+  ]
+}

@@ -91,18 +91,20 @@ pub struct Node {
 /// The kind of block `name` (`kinetics:shaft`), none for any other block.
 pub fn kind_of(name: &str) -> Option<Kind> {
     match name.strip_prefix("kinetics:")? {
-        "shaft" | "andesite_encased_shaft" | "brass_encased_shaft" | "metal_girder_encased_shaft" => Some(Kind::Shaft),
+        "shaft" | "speedometer" | "stressometer" | "andesite_encased_shaft" | "brass_encased_shaft" | "metal_girder_encased_shaft" | "flywheel" => Some(Kind::Shaft),
         "cogwheel" | "andesite_encased_cogwheel" | "brass_encased_cogwheel" => Some(Kind::Cog),
         "large_cogwheel" | "andesite_encased_large_cogwheel" | "brass_encased_large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
         "clutch" => Some(Kind::Clutch(false)),
         "gearshift" => Some(Kind::Gearshift(false)),
         "gearbox" => Some(Kind::Gearbox),
-        "hand_crank" => Some(Kind::Crank { toward: 1, rpm: 0 }),
+        // The cuckoo clocks are consumers with a shaft at the back, like a crank at rest.
+        "hand_crank" | "cuckoo_clock" | "mysterious_cuckoo_clock" => Some(Kind::Crank { toward: 1, rpm: 0 }),
         "creative_motor" => Some(Kind::Motor { toward: 1, rpm: 16 }),
         "rotation_speed_controller" => Some(Kind::Controller { rpm: 16 }),
         "encased_chain_drive" | "adjustable_chain_gearshift" => Some(Kind::Chain { signal: 0, conn: 3, ends: [false; 2] }),
-        "powered_shaft" => Some(Kind::PoweredShaft { rpm: 0 }),
+        // The water wheels are shafts that generate: the speed is their block entity's (settle.rs).
+        "powered_shaft" | "water_wheel" | "large_water_wheel" => Some(Kind::PoweredShaft { rpm: 0 }),
         _ => None,
     }
 }
@@ -293,7 +295,7 @@ pub fn powered_shaft_node(axis: Option<&str>, rpm: i32) -> Option<Node> {
 
 /// The speed a node gives its network; a motor set to 0 or a crank at rest gives none, so it doesn't fight another
 /// source.
-fn generated(n: Node) -> Option<f32> {
+pub fn generated(n: Node) -> Option<f32> {
     match n.kind {
         Kind::Source => Some(SOURCE_SPEED),
         Kind::Motor { toward, rpm } => {
@@ -478,7 +480,13 @@ pub fn solve(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Pos,
 
 /// `solve` with a speed for each half of a split block: `(pos, 0)` toward -axis, `(pos, 1)` toward +axis.
 pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Vertex, f32> {
+    solve_groups(changed, get).0
+}
+
+/// `solve_halves` and also the solved networks, each as its list of vertices (for the stress of `stress.rs`).
+pub fn solve_groups(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> (HashMap<Vertex, f32>, Vec<Vec<Vertex>>) {
     let mut out = HashMap::new();
+    let mut groups = Vec::new();
     let mut starts: Vec<Pos> = Vec::new();
     for &c in changed {
         starts.push(c);
@@ -548,6 +556,7 @@ pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashM
                     break;
                 }
             }
+            groups.push(nodes.iter().map(|&(v, _)| v).collect());
             for (v, _) in nodes {
                 let sv = if locked {
                     0.0
@@ -558,7 +567,7 @@ pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashM
             }
         }
     }
-    out
+    (out, groups)
 }
 
 /// The angle in degrees a part turning at `rpm` has reached at `ticks` (game
@@ -1112,6 +1121,12 @@ mod tests {
         );
         assert_eq!(node("minecraft:stone", Some("y")), None);
         assert_eq!(node("kinetics:shaft", None), None);
+    }
+    #[test]
+    fn a_flywheel_is_a_shaft_for_the_network() {
+        let n = node("kinetics:flywheel", Some("x")).unwrap();
+        assert_eq!((n.kind, n.axis, n.shafts), (Kind::Shaft, 0, [true; 2]));
+        assert!(has_block_entity("kinetics:flywheel"));
     }
     #[test]
     fn a_controller_sets_the_cogwheel_above_it_from_either_side() {

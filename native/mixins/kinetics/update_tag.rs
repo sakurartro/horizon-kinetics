@@ -18,10 +18,29 @@ fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     if let Some(rpm) = entity.nbt.get(&rpm_key) {
         out.insert(rpm_key, rpm.clone());
     }
+    // The network's capacity and stress (the goggles show them).
+    for name in crate::game::kinetics_stress::KEYS {
+        let key = JavaString::from(name);
+        if let Some(value) = entity.nbt.get(&key) {
+            out.insert(key, value.clone());
+        }
+    }
     // A bracket around a shaft or cogwheel.
     let bracket = JavaString::from(crate::game::kinetics_bracket::BRACKET_KEY);
     if let Some(value) = entity.nbt.get(&bracket) {
         out.insert(bracket, value.clone());
+    }
+    // A cuckoo clock's animation and when it began.
+    for key in [crate::game::kinetics_clock::ANIM_KEY, crate::game::kinetics_clock::START_KEY] {
+        let key = JavaString::from(key);
+        if let Some(value) = entity.nbt.get(&key) {
+            out.insert(key, value.clone());
+        }
+    }
+    // A water wheel's planks.
+    let material = JavaString::from(crate::game::kinetics_water_wheel::MATERIAL_KEY);
+    if let Some(value) = entity.nbt.get(&material) {
+        out.insert(material, value.clone());
     }
     *tag = Some(out);
 }

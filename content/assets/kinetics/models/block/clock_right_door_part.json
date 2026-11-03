@@ -1,0 +1,7 @@
+{
+  "textures": { "door": "minecraft:block/oak_planks" },
+  "elements": [
+    { "from": [1.5, 10, 8], "to": [2.5, 14, 10],
+      "faces": { "north": { "texture": "#door" }, "south": { "texture": "#door" }, "east": { "texture": "#door" }, "west": { "texture": "#door" }, "up": { "texture": "#door" }, "down": { "texture": "#door" } } }
+  ]
+}

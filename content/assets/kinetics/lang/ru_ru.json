@@ -8,6 +8,8 @@
   "block.kinetics.gearbox": "Коробка передач",
   "block.kinetics.vertical_gearbox": "Вертикальная коробка передач",
   "block.kinetics.hand_crank": "Рукоять",
+  "block.kinetics.cuckoo_clock": "Часы с кукушкой",
+  "block.kinetics.mysterious_cuckoo_clock": "Часы с кукушкой",
   "block.kinetics.creative_motor": "Творческий мотор",
   "block.kinetics.andesite_casing": "Андезитовый корпус",
   "block.kinetics.andesite_encased_shaft": "Вал в андезитовом корпусе",
@@ -22,11 +24,17 @@
   "block.kinetics.brass_encased_cogwheel": "Шестерня в латунном корпусе",
   "block.kinetics.brass_encased_large_cogwheel": "Большая шестерня в латунном корпусе",
   "block.kinetics.copper_casing": "Медный корпус",
+  "block.kinetics.speedometer": "Спидометр",
   "item.kinetics.wrench": "Гаечный ключ",
   "item.kinetics.goggles": "Очки инженера",
   "item.kinetics.wooden_bracket": "Деревянная скоба",
   "item.kinetics.metal_bracket": "Металлическая скоба",
+  "block.kinetics.stressometer": "Стрессометр",
   "block.kinetics.metal_girder": "Металлическая балка",
   "block.kinetics.metal_girder_encased_shaft": "Металлическая балка с валом",
-  "itemGroup.kinetics.kinetics": "Кинетика"
+  "block.kinetics.flywheel": "Маховик",
+  "itemGroup.kinetics.kinetics": "Кинетика",
+  "block.kinetics.water_wheel": "Водяное колесо",
+  "block.kinetics.large_water_wheel": "Большое водяное колесо",
+  "block.kinetics.water_wheel_structure": "Большое водяное колесо"
 }
