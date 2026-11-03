@@ -23,5 +23,10 @@ fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     if let Some(value) = entity.nbt.get(&bracket) {
         out.insert(bracket, value.clone());
     }
+    // A water wheel's planks.
+    let material = JavaString::from(crate::game::kinetics_water_wheel::MATERIAL_KEY);
+    if let Some(value) = entity.nbt.get(&material) {
+        out.insert(material, value.clone());
+    }
     *tag = Some(out);
 }

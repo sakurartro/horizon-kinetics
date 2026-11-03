@@ -28,5 +28,8 @@
   "item.kinetics.metal_bracket": "Металлическая скоба",
   "block.kinetics.metal_girder": "Металлическая балка",
   "block.kinetics.metal_girder_encased_shaft": "Металлическая балка с валом",
-  "itemGroup.kinetics.kinetics": "Кинетика"
+  "itemGroup.kinetics.kinetics": "Кинетика",
+  "block.kinetics.water_wheel": "Водяное колесо",
+  "block.kinetics.large_water_wheel": "Большое водяное колесо",
+  "block.kinetics.water_wheel_structure": "Большое водяное колесо"
 }

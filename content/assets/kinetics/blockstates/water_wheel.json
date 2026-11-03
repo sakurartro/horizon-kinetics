@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "kinetics:block/water_wheel_block",
+      "x": 180
+    },
+    "facing=east": {
+      "model": "kinetics:block/water_wheel_block",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "kinetics:block/water_wheel_block",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "kinetics:block/water_wheel_block",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up": {
+      "model": "kinetics:block/water_wheel_block"
+    },
+    "facing=west": {
+      "model": "kinetics:block/water_wheel_block",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

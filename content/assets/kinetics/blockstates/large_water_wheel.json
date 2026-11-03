@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "kinetics:block/water_wheel_empty"
+    },
+    "axis=y": {
+      "model": "kinetics:block/water_wheel_empty"
+    },
+    "axis=z": {
+      "model": "kinetics:block/water_wheel_empty"
+    }
+  }
+}

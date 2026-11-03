@@ -28,5 +28,8 @@
   "item.kinetics.metal_bracket": "Metal Bracket",
   "block.kinetics.metal_girder": "Metal Girder",
   "block.kinetics.metal_girder_encased_shaft": "Metal Girder Encased Shaft",
-  "itemGroup.kinetics.kinetics": "Kinetics"
+  "itemGroup.kinetics.kinetics": "Kinetics",
+  "block.kinetics.water_wheel": "Water Wheel",
+  "block.kinetics.large_water_wheel": "Large Water Wheel",
+  "block.kinetics.water_wheel_structure": "Large Water Wheel"
 }

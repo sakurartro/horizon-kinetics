@@ -16,6 +16,10 @@ fn kinetics_wrench(
     let block = game.native_block(pos);
     let axis = game.native_block_property(pos, "axis");
     let sneaking = game.keys.contains(&crate::game::KeyCode::ShiftLeft);
+    // A large water wheel can't be turned (its body is built for its axis), only picked up.
+    if block == crate::game::kinetics_water_wheel::LARGE && !sneaking {
+        return;
+    }
     match w::action(k::kind_of(&block).is_some(), sneaking, axis.as_deref().and_then(k::axis_of), face) {
         w::Action::Nothing => return,
         w::Action::Rotate(value) => {

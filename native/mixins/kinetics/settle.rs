@@ -71,6 +71,20 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
             let turn = crate::game::kinetics_crank::speed(dimension, p);
             return k::crank_node(&cell.borrow().native_block_property(p, "facing")?, turn);
         }
+        if crate::game::kinetics_water_wheel::is_wheel(&name) {
+            // A water wheel: a generator on its axis, at the speed its flow score (saved in its block entity) gives.
+            use crate::game::kinetics_water_wheel as w;
+            let score = match cell.borrow_mut().world.block_entities.get_mut(&(p[0], p[1], p[2])) {
+                Some(BlockEntity::Mod(m)) => match m.nbt.get(&JavaString::from(w::FLOW_KEY)) {
+                    Some(Tag::Int(v)) => *v,
+                    _ => 0,
+                },
+                _ => 0,
+            };
+            let g = cell.borrow();
+            let axis = w::axis_index(&g.native_block_property(p, if name == w::LARGE { "axis" } else { "facing" })?)?;
+            return k::powered_shaft_node(Some(["x", "y", "z"][axis]), w::generated(score, w::size(&name)));
+        }
         if name == "kinetics:powered_shaft" {
             // A powered shaft: its generator's speed, saved in its block entity (0 until set).
             let rpm = match cell.borrow_mut().world.block_entities.get_mut(&(p[0], p[1], p[2])) {

@@ -601,3 +601,112 @@ bindings = [
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
+
+# The water wheels (small and large) and the large one's structure blocks. A new block each (`kinetics:water_wheel`
+# with a `facing`, `kinetics:large_water_wheel` with an `axis`, `kinetics:water_wheel_structure` with a `facing`):
+# the rules are in water_wheel.rs (module `kinetics_water_wheel`), the injections below are its hooks; the solver
+# reads a wheel's flow score in settle.rs.
+[[module]]
+id = "water-wheel"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_water_wheel"
+source = "water_wheel.rs"
+
+# Every tick of a wheel: it looks at the water around it now and then.
+[[injection]]
+id = "water-wheel-tick"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_tick"
+helper = "water_wheel_tick.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "entity", ty = "&mut ModBlockEntity", value = "&mut *entity" },
+]
+
+# A large wheel placed or gone, a structure block gone: queued for the end of the tick.
+[[injection]]
+id = "water-wheel-changed"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_block_changed"
+helper = "water_wheel_changed.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "dimension", ty = "LevelDimension", value = "dimension" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "old", ty = "BlockStateId", value = "old" },
+  { name = "new", ty = "BlockStateId", value = "new" },
+]
+
+# The large wheels' bodies are built and cleaned up at the end of each level's tick.
+[[injection]]
+id = "water-wheel-settle"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "water_wheel_settle.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# Placement: the small wheel on the axis the player looks along, the large one only where its body fits.
+[[injection]]
+id = "water-wheel-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "water_wheel_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+# Planks used on a wheel change its wood.
+[[injection]]
+id = "water-wheel-use"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_use_item_on"
+helper = "water_wheel_use.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "stack", ty = "&ItemStack", value = "stack" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "claimed", ty = "&mut bool", value = "&mut *claimed" },
+]
+
+# The wheels' models, baked beside the block models.
+[[injection]]
+id = "water-wheel-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "water_wheel_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# A large wheel is drawn well beyond its block.
+[[injection]]
+id = "water-wheel-bounds"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_render_bounding_box"
+helper = "water_wheel_bounds.rs"
+bindings = [
+  { name = "block", ty = "&str", value = "block" },
+  { name = "bounds", ty = "&mut [f32; 6]", value = "&mut *bounds" },
+]
+
+# Each frame: the wheel, turned by its speed.
+[[injection]]
+id = "water-wheel-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "water_wheel_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
