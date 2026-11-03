@@ -13,6 +13,7 @@
   "block.kinetics.andesite_encased_shaft": "Вал в андезитовом корпусе",
   "block.kinetics.andesite_encased_cogwheel": "Шестерня в андезитовом корпусе",
   "block.kinetics.andesite_encased_large_cogwheel": "Большая шестерня в андезитовом корпусе",
+  "block.kinetics.copper_casing": "Медный корпус",
   "item.kinetics.wrench": "Гаечный ключ",
   "itemGroup.kinetics.kinetics": "Кинетика"
 }
