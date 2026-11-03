@@ -107,6 +107,114 @@ bindings = [
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
 
+# The creative motor. A new block `kinetics:creative_motor` with a `facing`: the rules are in motor.rs (module
+# `kinetics_motor`), the injections below are its hooks. Players' changes of its speed are queued and applied at the end
+# of the level's tick (motor_apply.rs), and the solver reads the setting from the block entity (settle.rs).
+[[module]]
+id = "motor"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_motor"
+source = "motor.rs"
+
+# Placed facing a shaft beside it, else the player.
+[[injection]]
+id = "motor-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "motor_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+# The right button with empty hands reverses it.
+[[injection]]
+id = "motor-click"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_right_click_block"
+helper = "motor_click.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "canceled", ty = "&mut bool", value = "&mut *canceled" },
+]
+
+# The wheel over it: the window sends the change to the server.
+[[injection]]
+id = "motor-scroll"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_mouse_scrolling"
+helper = "motor_scroll.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "accumulated", ty = "[i32; 2]", value = "accumulated" },
+  { name = "modifiers", ty = "u32", value = "modifiers" },
+  { name = "canceled", ty = "&mut bool", value = "&mut *canceled" },
+]
+
+# The server hears the wheel and queues the change.
+[[injection]]
+id = "motor-net"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_net_from_client"
+helper = "motor_net.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "player", ty = "u128", value = "player" },
+  { name = "channel", ty = "&str", value = "channel" },
+  { name = "data", ty = "&[u8]", value = "data" },
+]
+
+# The queued changes become the motors' settings.
+[[injection]]
+id = "motor-apply"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "motor_apply.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# The value box under the crosshair.
+[[injection]]
+id = "motor-hud"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_gui_layer_post"
+helper = "motor_hud.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "layer", ty = "&str", value = "layer" },
+  { name = "batch", ty = "&mut HudBatch", value = "&mut *batch" },
+]
+
+# The motor's models, baked beside the block models.
+[[injection]]
+id = "motor-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "motor_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# Each frame: the motor's body and its turning shaft.
+[[injection]]
+id = "motor-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "motor_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
+
 # The casing: its rules (cased variants, model names) are a module of their own.
 [[module]]
 id = "casing"

@@ -79,6 +79,7 @@ def main():
         if f"assets/create/textures/{path}.png" not in names:
             print(f"warning: {a.jar.name} has no texture {name}", file=sys.stderr)
 
+    MODELS.extend(["creative_motor/block", "creative_motor/block_vertical"])  # motor.rs LOOK_MODELS (its shaft_half is the casing's)
     for name in MODELS:
         model(f"create:block/{name}")
     files["pack.mcmeta"] = json.dumps({"pack": {

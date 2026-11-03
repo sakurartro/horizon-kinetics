@@ -41,6 +41,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 pub const SOURCE_SPEED: f32 = 16.0;
 /// The block entity's saved key for its speed.
 pub const SPEED_KEY: &str = "speed";
+/// The creative motor's saved setting, in RPM (signed; absent: 16).
+pub const RPM_KEY: &str = "rpm";
 // shortcut: a network larger than this is solved only up to the cap, raise it if real builds hit it.
 pub const MAX_NODES: usize = 4096;
 
@@ -52,6 +54,9 @@ pub enum Kind {
     Cog,
     LargeCog,
     Source,
+    /// The creative motor: its shaft is at one end of its axis only, `toward` (+1 / -1) the end, and it gives its
+    /// setting `rpm` (signed, -256 to 256). `kind_of` can only name it: the facing and the setting are the block's.
+    Motor { toward: i8, rpm: i16 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -71,6 +76,7 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "cogwheel" | "andesite_encased_cogwheel" => Some(Kind::Cog),
         "large_cogwheel" | "andesite_encased_large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
+        "creative_motor" => Some(Kind::Motor { toward: 1, rpm: 16 }),
         _ => None,
     }
 }
@@ -120,6 +126,35 @@ pub fn shaft_ends(p: Pos, axis: usize, get: impl Fn(Pos) -> Option<Node>) -> [bo
         q[axis] += if positive { 1 } else { -1 };
         get(q).is_some_and(|n| has_shaft_toward(n, axis, !positive))
     })
+}
+
+/// The creative motor at an axis, from its block state's `facing` and its saved setting.
+pub fn motor_node(facing: &str, rpm: i32) -> Option<Node> {
+    let (axis, toward) = match facing {
+        "down" => (1, -1),
+        "up" => (1, 1),
+        "north" => (2, -1),
+        "south" => (2, 1),
+        "west" => (0, -1),
+        "east" => (0, 1),
+        _ => return None,
+    };
+    let rpm = rpm.clamp(-256, 256) as i16;
+    // Its shaft is at the `toward` end only.
+    Some(Node { kind: Kind::Motor { toward, rpm }, axis, shafts: [toward < 0, toward > 0] })
+}
+
+/// The speed a node gives its network along its axis's positive end; a motor set to 0 gives none, so it doesn't
+/// fight another source.
+fn generated(n: Node) -> Option<f32> {
+    match n.kind {
+        Kind::Source => Some(SOURCE_SPEED),
+        Kind::Motor { toward, rpm } => {
+            let v = f32::from(rpm) * f32::from(toward);
+            (v != 0.0).then_some(v)
+        }
+        _ => None,
+    }
 }
 
 fn small(n: Node) -> bool {
@@ -263,8 +298,8 @@ pub fn solve(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Pos,
         let mut speed: HashMap<Pos, f32> = HashMap::new();
         let mut queue: VecDeque<Pos> = VecDeque::new();
         for &(p, n) in &nodes {
-            if n.kind == Kind::Source {
-                speed.insert(p, SOURCE_SPEED);
+            if let Some(v) = generated(n) {
+                speed.insert(p, v);
                 queue.push_back(p);
             }
         }
@@ -342,7 +377,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog)
+        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Motor { .. })
     )
 }
 
@@ -366,7 +401,7 @@ pub fn look_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(LOOK_MODELS[0]),
         Kind::Cog => Some(LOOK_MODELS[1]),
         Kind::LargeCog => Some(LOOK_MODELS[2]),
-        Kind::Source => None,
+        Kind::Source | Kind::Motor { .. } => None,
     }
 }
 
@@ -375,7 +410,7 @@ pub fn part_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(PART_MODELS[0]),
         Kind::Cog => Some(PART_MODELS[1]),
         Kind::LargeCog => Some(PART_MODELS[2]),
-        Kind::Source => None,
+        Kind::Source | Kind::Motor { .. } => None,
     }
 }
 
