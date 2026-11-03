@@ -13,7 +13,7 @@ Default output: the Horizon game folder's resourcepacks/kinetics-create-look.zip
 import argparse, json, pathlib, re, sys, zipfile
 
 # Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis.
-MODELS = ["shaft", "cogwheel", "large_cogwheel"]
+MODELS = ["shaft", "cogwheel", "large_cogwheel", "shaft_half"]
 PACK_FORMAT = [97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
 
 

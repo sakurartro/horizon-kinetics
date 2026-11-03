@@ -1,1 +1,1 @@
-{ "values": ["kinetics:shaft", "kinetics:source"] }
+{ "values": ["kinetics:shaft", "kinetics:source", "kinetics:gearbox", "kinetics:vertical_gearbox"] }

@@ -52,6 +52,8 @@ pub enum Kind {
     Cog,
     LargeCog,
     Source,
+    /// The gearbox: `axis` is the one without a shaft; the other two have a shaft out of both sides.
+    Gearbox,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -68,6 +70,7 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "cogwheel" => Some(Kind::Cog),
         "large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
+        "gearbox" => Some(Kind::Gearbox),
         _ => None,
     }
 }
@@ -88,6 +91,29 @@ pub fn node(name: &str, axis: Option<&str>) -> Option<Node> {
         kind: kind_of(name)?,
         axis: axis_of(axis?)?,
     })
+}
+
+/// Whether `n` has a shaft out of its faces on `axis`: a gearbox on the two axes it doesn't stand on, every
+/// other kind on its own axis.
+pub fn has_shaft(n: Node, axis: usize) -> bool {
+    (n.kind == Kind::Gearbox) != (n.axis == axis)
+}
+
+/// How a gearbox's face on `axis` (the positive side if `positive`) turns, against the gearbox's own speed
+/// (the speed the solver stores for it): the two faces of an axis turn opposite ways, and the other axis
+/// the other way round, whichever face is the input (`RotationPropagator.getAxisModifier`).
+pub fn gearbox_sign(box_axis: usize, axis: usize, positive: bool) -> f32 {
+    let first = (0..3).find(|&a| a != box_axis).unwrap_or(0);
+    let s = if positive { 1.0 } else { -1.0 };
+    if axis == first { s } else { -s }
+}
+
+fn face_sign(n: Node, axis: usize, positive: bool) -> f32 {
+    if n.kind == Kind::Gearbox {
+        gearbox_sign(n.axis, axis, positive)
+    } else {
+        1.0
+    }
 }
 
 fn small(n: Node) -> bool {
@@ -127,12 +153,12 @@ pub const OFFSETS: [Pos; 18] = [
 /// small one, 0 when they don't connect. `getRotationSpeedModifier`.
 pub fn modifier(from: Node, to: Node, diff: Pos) -> f32 {
     let nonzero: Vec<usize> = (0..3).filter(|&a| diff[a] != 0).collect();
-    // Axis <-> axis: face neighbours along both shafts. Every kind here has a
-    // shaft through its own axis (`hasShaftTowards`).
+    // Axis <-> axis: face neighbours along both shafts (`hasShaftTowards`); a gearbox turns
+    // the direction by its face (`getAxisModifier`).
     if nonzero.len() == 1 {
         let a = nonzero[0];
-        if diff[a].abs() == 1 && from.axis == a && to.axis == a {
-            return 1.0;
+        if diff[a].abs() == 1 && has_shaft(from, a) && has_shaft(to, a) {
+            return face_sign(from, a, diff[a] > 0) * face_sign(to, a, diff[a] < 0);
         }
     }
     // Large <-> large, axes crossed (`isLargeToLargeGear`).
@@ -307,7 +333,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog)
+        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Gearbox)
     )
 }
 
@@ -331,7 +357,7 @@ pub fn look_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(LOOK_MODELS[0]),
         Kind::Cog => Some(LOOK_MODELS[1]),
         Kind::LargeCog => Some(LOOK_MODELS[2]),
-        Kind::Source => None,
+        Kind::Source | Kind::Gearbox => None,
     }
 }
 
@@ -340,7 +366,7 @@ pub fn part_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(PART_MODELS[0]),
         Kind::Cog => Some(PART_MODELS[1]),
         Kind::LargeCog => Some(PART_MODELS[2]),
-        Kind::Source => None,
+        Kind::Source | Kind::Gearbox => None,
     }
 }
 
