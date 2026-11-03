@@ -23,6 +23,8 @@
   "block.kinetics.brass_encased_large_cogwheel": "Большая шестерня в латунном корпусе",
   "block.kinetics.copper_casing": "Медный корпус",
   "item.kinetics.wrench": "Гаечный ключ",
+  "item.kinetics.wooden_bracket": "Деревянная скоба",
+  "item.kinetics.metal_bracket": "Металлическая скоба",
   "block.kinetics.metal_girder": "Металлическая балка",
   "block.kinetics.metal_girder_encased_shaft": "Металлическая балка с валом",
   "itemGroup.kinetics.kinetics": "Кинетика"
