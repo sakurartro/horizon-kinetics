@@ -393,6 +393,26 @@ bindings = [
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
 
+# The goggles' module: their rules have no game types.
+[[module]]
+id = "goggles"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_goggles"
+source = "goggles.rs"
+
+# Goggles on the head: the speed of the kinetic block under the crosshair.
+[[injection]]
+id = "goggles-hud"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_gui_layer_post"
+helper = "goggles_hud.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "layer", ty = "&str", value = "layer" },
+  { name = "batch", ty = "&mut HudBatch", value = "&mut *batch" },
+]
+
+
 # The brackets: their rules (which blocks, rotations, model names) are a module of their own.
 [[module]]
 id = "bracket"
