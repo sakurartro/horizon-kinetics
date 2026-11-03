@@ -91,7 +91,7 @@ pub struct Node {
 /// The kind of block `name` (`kinetics:shaft`), none for any other block.
 pub fn kind_of(name: &str) -> Option<Kind> {
     match name.strip_prefix("kinetics:")? {
-        "shaft" | "andesite_encased_shaft" | "brass_encased_shaft" | "metal_girder_encased_shaft" => Some(Kind::Shaft),
+        "shaft" | "stressometer" | "andesite_encased_shaft" | "brass_encased_shaft" | "metal_girder_encased_shaft" => Some(Kind::Shaft),
         "cogwheel" | "andesite_encased_cogwheel" | "brass_encased_cogwheel" => Some(Kind::Cog),
         "large_cogwheel" | "andesite_encased_large_cogwheel" | "brass_encased_large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
@@ -293,7 +293,7 @@ pub fn powered_shaft_node(axis: Option<&str>, rpm: i32) -> Option<Node> {
 
 /// The speed a node gives its network; a motor set to 0 or a crank at rest gives none, so it doesn't fight another
 /// source.
-fn generated(n: Node) -> Option<f32> {
+pub fn generated(n: Node) -> Option<f32> {
     match n.kind {
         Kind::Source => Some(SOURCE_SPEED),
         Kind::Motor { toward, rpm } => {
@@ -478,7 +478,13 @@ pub fn solve(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Pos,
 
 /// `solve` with a speed for each half of a split block: `(pos, 0)` toward -axis, `(pos, 1)` toward +axis.
 pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashMap<Vertex, f32> {
+    solve_groups(changed, get).0
+}
+
+/// `solve_halves` and also the solved networks, each as its list of vertices (for the stress of `stress.rs`).
+pub fn solve_groups(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> (HashMap<Vertex, f32>, Vec<Vec<Vertex>>) {
     let mut out = HashMap::new();
+    let mut groups = Vec::new();
     let mut starts: Vec<Pos> = Vec::new();
     for &c in changed {
         starts.push(c);
@@ -548,6 +554,7 @@ pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashM
                     break;
                 }
             }
+            groups.push(nodes.iter().map(|&(v, _)| v).collect());
             for (v, _) in nodes {
                 let sv = if locked {
                     0.0
@@ -558,7 +565,7 @@ pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashM
             }
         }
     }
-    out
+    (out, groups)
 }
 
 /// The angle in degrees a part turning at `rpm` has reached at `ticks` (game

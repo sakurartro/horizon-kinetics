@@ -400,6 +400,13 @@ file = "crates/horizon-client/src/game.rs"
 name = "kinetics_goggles"
 source = "goggles.rs"
 
+# Create's stress rules (capacity, impact, overstress): their rules have no game types.
+[[module]]
+id = "stress"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_stress"
+source = "stress.rs"
+
 # Goggles on the head: the speed of the kinetic block under the crosshair.
 [[injection]]
 id = "goggles-hud"
@@ -600,4 +607,75 @@ bindings = [
   { name = "state", ty = "BlockStateId", value = "state" },
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
+
+# The stressometer. A new block `kinetics:stressometer` with a `facing` and `axis_along_first`: its rules are in
+# stressometer.rs (module `kinetics_stressometer`); the solver treats it as a shaft along the axis those give (runtime.rs
+# `kind_of`, settle.rs), and the goggles' box for it is in goggles_hud.rs.
+[[module]]
+id = "stressometer"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_stressometer"
+source = "stressometer.rs"
+
+# Placed on a shaft's end it is clicked on, else on the clicked face.
+[[injection]]
+id = "stressometer-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "stressometer_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+# Create's bodies, dial and head, baked beside the block models.
+[[injection]]
+id = "stressometer-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "stressometer_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# Each frame: the body, the turning shaft, the heads and their needles.
+[[injection]]
+id = "stressometer-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "stressometer_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
+
+# A comparator reads the needle.
+[[injection]]
+id = "stressometer-has-analog"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_has_analog_output"
+helper = "stressometer_has_analog.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "output", ty = "&mut bool", value = "&mut *output" },
+]
+
+[[injection]]
+id = "stressometer-analog"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_analog_output"
+helper = "stressometer_analog.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "output", ty = "&mut i32", value = "&mut *output" },
 ]
