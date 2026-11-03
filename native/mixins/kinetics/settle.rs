@@ -83,6 +83,14 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
             };
             return k::powered_shaft_node(cell.borrow().native_block_property(p, "axis").as_deref(), rpm);
         }
+        if name == crate::game::kinetics_stressometer::BLOCK {
+            // A stressometer: a shaft along the axis its facing and `axis_along_first` give.
+            use crate::game::kinetics_stressometer as sm;
+            let g = cell.borrow();
+            let facing = sm::dir_vec(&g.native_block_property(p, "facing")?)?;
+            let along = g.native_block_property(p, "axis_along_first").as_deref() == Some("true");
+            return k::node(&name, Some(["x", "y", "z"][sm::rotation_axis(facing, along)]));
+        }
         let controller = name == crate::game::kinetics_speed_controller::BLOCK;
         if name != crate::game::kinetics_motor::BLOCK && !controller {
             let g = cell.borrow();
@@ -167,5 +175,8 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
     }
     for pos in moved {
         game.native_block_entity_sync(pos);
+        if game.native_block(pos) == crate::game::kinetics_stressometer::BLOCK {
+            game.native_update_output_neighbors(dimension, pos);
+        }
     }
 }

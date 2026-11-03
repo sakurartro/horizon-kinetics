@@ -31,6 +31,30 @@ fn kinetics_goggles_hud(game: &mut crate::game::Game<'_>, layer: &str, batch: &m
     } else {
         return;
     };
+    if block == crate::game::kinetics_stressometer::BLOCK {
+        // Create's gauge information in a tooltip box beside the crosshair (`GoggleOverlayRenderer`: offset 20, 20),
+        // each line a row of coloured pieces.
+        use crate::game::kinetics_stressometer as sm;
+        let net = st::read(&read);
+        let (capacity, stress) = net.map_or((0.0, 0.0), |n| (n.stress.capacity, n.stress.stress));
+        let level = st::Level::of(stress / if capacity == 0.0 { 1.0 } else { capacity }) as usize;
+        let Some(lines) = sm::tooltip(capacity, stress, net.map_or(0.0, |n| n.theoretical_speed), level, st::DISABLE_STRESS) else { return };
+        let width = lines.iter().map(|l| l.iter().map(|(t, _)| game.native_text_width(t)).sum::<f32>()).fold(0.0, f32::max);
+        let (x, y) = (batch.width / 2.0 + 20.0, batch.height / 2.0 + 20.0);
+        let (w, h) = (width + 6.0, 10.0 * lines.len() as f32 + 6.0);
+        game.native_fill(batch, [x - 3.0, y - 3.0, w, h], 0xF0_100010);
+        for rect in [[x - 3.0, y - 3.0, w, 1.0], [x - 3.0, y - 3.0 + h - 1.0, w, 1.0], [x - 3.0, y - 2.0, 1.0, h - 2.0], [x - 3.0 + w - 1.0, y - 2.0, 1.0, h - 2.0]] {
+            game.native_fill(batch, rect, 0x50_5000FF);
+        }
+        for (i, line) in lines.iter().enumerate() {
+            let mut at = x;
+            for (text, rgb) in line {
+                game.native_text(batch, text, [at, y + 10.0 * i as f32], *rgb, true);
+                at += game.native_text_width(text);
+            }
+        }
+        return;
+    }
     let mut lines = vec![(g::label(speed), 0xFF_FFFF)];
     lines.extend(g::stress_lines(overstressed, st::impact(&block), st::capacity(&block), theoretical));
     for (i, (text, rgb)) in lines.iter().enumerate() {
