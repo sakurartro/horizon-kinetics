@@ -12,6 +12,38 @@ fn kinetics_submit(
     use crate::game::kinetics as k;
     use horizon_world::nbt::{JavaString, Tag};
     let Some(kind) = k::kind_of(block) else { return };
+    // A clutch or gearshift: two shaft halves, each at its own speed (SplitShaftRenderer).
+    if k::is_split(kind) {
+        use crate::game::kinetics_clutch as c;
+        let Some(axis) = game.native_block_state_property(state, "axis").and_then(k::axis_of) else {
+            return;
+        };
+        let ticks = draw.game_time as f64 + f64::from(draw.partial);
+        let centre = [0.5; 3];
+        let around = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+        draw.light = k::part_light(around.map(|d| game.native_light([pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]])));
+        for half in 0..2u8 {
+            let key = JavaString::from(if half == 0 { k::SPEED_KEY } else { c::SPEED_POS_KEY });
+            let speed = match entity.nbt.get(&key) {
+                Some(Tag::Float(bits)) => f32::from_bits(*bits),
+                _ => 0.0,
+            };
+            let angle = k::angle(speed, ticks);
+            // Create's model first (only with the look pack on), ours the fallback.
+            for (look, model) in [(true, c::LOOK_HALF_MODEL), (false, c::HALF_MODEL)] {
+                draw.push();
+                for (turn, degrees) in c::half_turns(axis, half == 1, look, angle) {
+                    draw.rotate_about(turn, degrees, centre);
+                }
+                let drawn = game.native_draw_model(draw, model, 0xFF_FFFF);
+                draw.pop();
+                if drawn {
+                    break;
+                }
+            }
+        }
+        return;
+    }
     // The cased parts are drawn by casing_submit.rs.
     if crate::game::kinetics_casing::is_encased(block) {
         return;

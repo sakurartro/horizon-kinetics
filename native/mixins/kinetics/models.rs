@@ -5,4 +5,6 @@ fn kinetics_models(models: &mut Vec<String>) {
     models.extend(k::PART_MODELS.iter().chain(&k::LOOK_MODELS).map(|m| m.to_string()));
     use crate::game::kinetics_casing as c;
     models.extend(c::PART_MODELS.iter().chain(&c::LOOK_MODELS).chain(&c::STATIC_LOOK_MODELS).map(|m| m.to_string()));
+    // The clutch's half shaft is ours: Create's `shaft_half` (its look) is the casing's, registered above.
+    models.push(crate::game::kinetics_clutch::HALF_MODEL.to_string());
 }

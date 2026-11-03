@@ -12,7 +12,7 @@ Default output: the Horizon game folder's resourcepacks/kinetics-create-look.zip
 """
 import argparse, json, pathlib, re, sys, zipfile
 
-# Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis.
+# Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis but shaft_half (casing.rs, clutch.rs), along z.
 MODELS = ["shaft", "cogwheel", "large_cogwheel"]
 # The andesite casing's (casing.rs LOOK_MODELS, STATIC_LOOK_MODELS): the cased parts' turning parts, and the static
 # models drawn over the placeholders; the cogwheels' have a variant per shaft end.

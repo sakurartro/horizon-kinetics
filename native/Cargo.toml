@@ -10,6 +10,10 @@ description = "Shafts and cogwheels for Horizon: the rotation network logic and 
 [lib]
 path = "mixins/kinetics/runtime.rs"
 
+# clutch.rs is a module of the bundle like runtime.rs, with its tests in a target of their own.
+[[test]]
+name = "clutch"
+path = "mixins/kinetics/clutch.rs"
 # The hand crank's pure rules, also added to the game as `game::kinetics_crank`; its tests are their own target.
 [[test]]
 name = "crank"

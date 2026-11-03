@@ -1,0 +1,6 @@
+{
+  "parent": "kinetics:block/split_item_base",
+  "textures": {
+    "plate": "minecraft:block/polished_andesite"
+  }
+}
