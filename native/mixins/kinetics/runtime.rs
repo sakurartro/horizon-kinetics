@@ -41,6 +41,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 pub const SOURCE_SPEED: f32 = 16.0;
 /// The block entity's saved key for its speed.
 pub const SPEED_KEY: &str = "speed";
+/// The creative motor's saved setting, in RPM (signed; absent: 16).
+pub const RPM_KEY: &str = "rpm";
 // shortcut: a network larger than this is solved only up to the cap, raise it if real builds hit it.
 pub const MAX_NODES: usize = 4096;
 
@@ -55,6 +57,9 @@ pub enum Kind {
     /// The hand crank: its shaft is at one end of its axis only, `toward` (+1 / -1) the end, and it gives `rpm`
     /// (signed along the axis, 0 while nobody turns it). `kind_of` can only name it: the facing and the speed are the block's.
     Crank { toward: i8, rpm: i16 },
+    /// The creative motor: its shaft is at one end of its axis only, `toward` (+1 / -1) the end, and it gives its
+    /// setting `rpm` (signed, -256 to 256). `kind_of` can only name it: the facing and the setting are the block's.
+    Motor { toward: i8, rpm: i16 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -62,16 +67,20 @@ pub struct Node {
     pub kind: Kind,
     /// 0 = x, 1 = y, 2 = z.
     pub axis: usize,
+    /// Whether a shaft pokes out of the end on the negative / positive side of the axis: every kind has both,
+    /// except a casing's cogwheel (`bottom_shaft`, `top_shaft`), whose shafts are there only when set.
+    pub shafts: [bool; 2],
 }
 
 /// The kind of block `name` (`kinetics:shaft`), none for any other block.
 pub fn kind_of(name: &str) -> Option<Kind> {
     match name.strip_prefix("kinetics:")? {
-        "shaft" => Some(Kind::Shaft),
-        "cogwheel" => Some(Kind::Cog),
-        "large_cogwheel" => Some(Kind::LargeCog),
+        "shaft" | "andesite_encased_shaft" => Some(Kind::Shaft),
+        "cogwheel" | "andesite_encased_cogwheel" => Some(Kind::Cog),
+        "large_cogwheel" | "andesite_encased_large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
         "hand_crank" => Some(Kind::Crank { toward: 1, rpm: 0 }),
+        "creative_motor" => Some(Kind::Motor { toward: 1, rpm: 16 }),
         _ => None,
     }
 }
@@ -88,10 +97,55 @@ pub fn axis_of(value: &str) -> Option<usize> {
 
 /// The node for a block name and its `axis` property.
 pub fn node(name: &str, axis: Option<&str>) -> Option<Node> {
+    node_ends(name, axis, None, None)
+}
+
+/// `node` with the block state properties `bottom_shaft` and `top_shaft`, which a casing's cogwheel has.
+pub fn node_ends(
+    name: &str,
+    axis: Option<&str>,
+    bottom: Option<&str>,
+    top: Option<&str>,
+) -> Option<Node> {
+    let kind = kind_of(name)?;
+    let cased_cog = kind != Kind::Shaft && name.contains("_encased_");
+    let end = |p: Option<&str>| !cased_cog || p == Some("true");
     Some(Node {
-        kind: kind_of(name)?,
+        kind,
         axis: axis_of(axis?)?,
+        shafts: [end(bottom), end(top)],
     })
+}
+
+/// Create's `hasShaftTowards`: whether `n` has a shaft out of its end on the positive (or negative) side of `axis`.
+pub fn has_shaft_toward(n: Node, axis: usize, positive: bool) -> bool {
+    n.axis == axis && n.shafts[usize::from(positive)]
+}
+
+/// Which ends (negative, positive) of a cogwheel on `axis` at `p` get a shaft when it is cased: those whose
+/// neighbour along the axis has a shaft toward it (`EncasedCogwheelBlock.handleEncasing`).
+pub fn shaft_ends(p: Pos, axis: usize, get: impl Fn(Pos) -> Option<Node>) -> [bool; 2] {
+    [false, true].map(|positive| {
+        let mut q = p;
+        q[axis] += if positive { 1 } else { -1 };
+        get(q).is_some_and(|n| has_shaft_toward(n, axis, !positive))
+    })
+}
+
+/// The creative motor at an axis, from its block state's `facing` and its saved setting.
+pub fn motor_node(facing: &str, rpm: i32) -> Option<Node> {
+    let (axis, toward) = match facing {
+        "down" => (1, -1),
+        "up" => (1, 1),
+        "north" => (2, -1),
+        "south" => (2, 1),
+        "west" => (0, -1),
+        "east" => (0, 1),
+        _ => return None,
+    };
+    let rpm = rpm.clamp(-256, 256) as i16;
+    // Its shaft is at the `toward` end only.
+    Some(Node { kind: Kind::Motor { toward, rpm }, axis, shafts: [toward < 0, toward > 0] })
 }
 
 /// The hand crank at an axis, from its block state's `facing` (the way the handle points) and the speed
@@ -107,23 +161,22 @@ pub fn crank_node(facing: &str, turn: i32) -> Option<Node> {
         _ => return None,
     };
     let rpm = (turn.clamp(-256, 256) * out) as i16;
-    Some(Node { kind: Kind::Crank { toward: -out as i8, rpm }, axis })
+    // Its shaft is at the end opposite the handle.
+    let toward = -out as i8;
+    Some(Node { kind: Kind::Crank { toward, rpm }, axis, shafts: [toward < 0, toward > 0] })
 }
 
-/// The speed a node gives its network; a crank at rest gives none, so it doesn't fight another source.
+/// The speed a node gives its network; a motor set to 0 or a crank at rest gives none, so it doesn't fight another
+/// source.
 fn generated(n: Node) -> Option<f32> {
     match n.kind {
         Kind::Source => Some(SOURCE_SPEED),
+        Kind::Motor { toward, rpm } => {
+            let v = f32::from(rpm) * f32::from(toward);
+            (v != 0.0).then_some(v)
+        }
         Kind::Crank { rpm, .. } => (rpm != 0).then_some(f32::from(rpm)),
         _ => None,
-    }
-}
-
-/// Whether the node has a shaft end on the side `d` (+1 / -1 along its axis): everything has both, a crank one.
-fn open_end(n: Node, d: i32) -> bool {
-    match n.kind {
-        Kind::Crank { toward, .. } => i32::from(toward) == d,
-        _ => true,
     }
 }
 
@@ -164,11 +217,14 @@ pub const OFFSETS: [Pos; 18] = [
 /// small one, 0 when they don't connect. `getRotationSpeedModifier`.
 pub fn modifier(from: Node, to: Node, diff: Pos) -> f32 {
     let nonzero: Vec<usize> = (0..3).filter(|&a| diff[a] != 0).collect();
-    // Axis <-> axis: face neighbours along both shafts. Every kind here has a
-    // shaft through its own axis (`hasShaftTowards`).
+    // Axis <-> axis: face neighbours along both shafts, each with a shaft toward the other
+    // (`hasShaftTowards`).
     if nonzero.len() == 1 {
         let a = nonzero[0];
-        if diff[a].abs() == 1 && from.axis == a && to.axis == a && open_end(from, diff[a]) && open_end(to, -diff[a]) {
+        if diff[a].abs() == 1
+            && has_shaft_toward(from, a, diff[a] > 0)
+            && has_shaft_toward(to, a, diff[a] < 0)
+        {
             return 1.0;
         }
     }
@@ -344,7 +400,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Crank { .. })
+        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Motor { .. } | Kind::Crank { .. })
     )
 }
 
@@ -368,7 +424,7 @@ pub fn look_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(LOOK_MODELS[0]),
         Kind::Cog => Some(LOOK_MODELS[1]),
         Kind::LargeCog => Some(LOOK_MODELS[2]),
-        Kind::Source | Kind::Crank { .. } => None,
+        Kind::Source | Kind::Motor { .. } | Kind::Crank { .. } => None,
     }
 }
 
@@ -377,7 +433,7 @@ pub fn part_model(kind: Kind) -> Option<&'static str> {
         Kind::Shaft => Some(PART_MODELS[0]),
         Kind::Cog => Some(PART_MODELS[1]),
         Kind::LargeCog => Some(PART_MODELS[2]),
-        Kind::Source | Kind::Crank { .. } => None,
+        Kind::Source | Kind::Motor { .. } | Kind::Crank { .. } => None,
     }
 }
 
@@ -427,6 +483,7 @@ mod tests {
             blocks.iter().find(|b| b.0 == p).map(|b| Node {
                 kind: b.1,
                 axis: b.2,
+                shafts: [true; 2],
             })
         }
     }
@@ -574,7 +631,7 @@ mod tests {
             if q == p {
                 Some(c)
             } else if q == [0, -1, 0] || q == [0, 1, 0] || q == [1, 0, 0] {
-                Some(Node { kind: Shaft, axis: if q[0] == 1 { X } else { Y } })
+                Some(Node { kind: Shaft, axis: if q[0] == 1 { X } else { Y }, shafts: [true; 2] })
             } else {
                 None
             }
@@ -635,13 +692,92 @@ mod tests {
         assert_eq!(take("test:b"), vec![[4, 5, 6]]);
     }
 
+    fn cased(kind: Kind, axis: usize, shafts: [bool; 2]) -> Node {
+        Node { kind, axis, shafts }
+    }
+
+    fn nodes(blocks: &[(Pos, Node)]) -> impl Fn(Pos) -> Option<Node> + '_ {
+        move |p| blocks.iter().find(|b| b.0 == p).map(|b| b.1)
+    }
+
+    #[test]
+    fn a_cased_cogwheel_carries_speed_only_through_the_ends_with_a_shaft() {
+        let w = [
+            ([0, 0, 0], cased(Source, Y, [true; 2])),
+            ([0, 1, 0], cased(Shaft, Y, [true; 2])),
+            ([0, 2, 0], cased(Cog, Y, [true, false])),
+            ([0, 3, 0], cased(Shaft, Y, [true; 2])),
+        ];
+        let s = solve(&[[0, 2, 0]], nodes(&w));
+        assert_eq!(s[&[0, 2, 0]], 16.0);
+        assert_eq!(s[&[0, 3, 0]], 0.0);
+        // No shaft at all: the shaft below doesn't reach it.
+        let w = [
+            ([0, 0, 0], cased(Source, Y, [true; 2])),
+            ([0, 1, 0], cased(Shaft, Y, [true; 2])),
+            ([0, 2, 0], cased(Cog, Y, [false; 2])),
+        ];
+        let s = solve(&[[0, 2, 0]], nodes(&w));
+        assert_eq!(s[&[0, 2, 0]], 0.0);
+    }
+
+    #[test]
+    fn a_cased_cogwheel_meshes_with_its_neighbours_like_a_bare_one() {
+        let w = [
+            ([0, 0, 0], cased(Source, Y, [true; 2])),
+            ([0, 1, 0], cased(Shaft, Y, [true; 2])),
+            ([0, 2, 0], cased(Cog, Y, [true, false])),
+            ([1, 2, 0], cased(Cog, Y, [false; 2])),
+        ];
+        let s = solve(&[[0, 2, 0]], nodes(&w));
+        assert_eq!(s[&[1, 2, 0]], -16.0);
+        // A cased large cogwheel with no shafts is driven by a small one diagonally beside it.
+        let w = [
+            ([0, 0, 0], cased(Source, Y, [true; 2])),
+            ([0, 1, 0], cased(Cog, Y, [true; 2])),
+            ([1, 1, 1], cased(LargeCog, Y, [false; 2])),
+        ];
+        let s = solve(&[[0, 1, 0]], nodes(&w));
+        assert_eq!(s[&[1, 1, 1]], -8.0);
+    }
+
+    #[test]
+    fn casing_a_cogwheel_puts_shafts_where_neighbours_have_one_toward_it() {
+        let w = [
+            ([0, 0, 0], cased(Shaft, Y, [true; 2])),
+            // Above: a shaft on another axis does not count.
+            ([0, 2, 0], cased(Shaft, X, [true; 2])),
+        ];
+        assert_eq!(shaft_ends([0, 1, 0], Y, nodes(&w)), [true, false]);
+        // A cased cogwheel without a shaft toward it doesn't count either.
+        let w = [([0, 2, 0], cased(Cog, Y, [false, true]))];
+        assert_eq!(shaft_ends([0, 1, 0], Y, nodes(&w)), [false, false]);
+        let w = [([0, 2, 0], cased(Cog, Y, [true, false]))];
+        assert_eq!(shaft_ends([0, 1, 0], Y, nodes(&w)), [false, true]);
+    }
+
+    #[test]
+    fn cased_blocks_are_kinetic_parts_and_cogwheels_read_their_shaft_properties() {
+        let ends = |n: Option<Node>| n.map(|n| (n.kind, n.shafts));
+        let n = node_ends("kinetics:andesite_encased_cogwheel", Some("y"), Some("false"), Some("true"));
+        assert_eq!(ends(n), Some((Kind::Cog, [false, true])));
+        let n = node_ends("kinetics:andesite_encased_large_cogwheel", Some("x"), None, None);
+        assert_eq!(ends(n), Some((Kind::LargeCog, [false, false])));
+        let n = node_ends("kinetics:andesite_encased_shaft", Some("z"), None, None);
+        assert_eq!(ends(n), Some((Kind::Shaft, [true, true])));
+        let n = node_ends("kinetics:cogwheel", Some("z"), None, None);
+        assert_eq!(ends(n), Some((Kind::Cog, [true, true])));
+        assert!(has_block_entity("kinetics:andesite_encased_shaft"));
+    }
+
     #[test]
     fn block_names_and_axes() {
         assert_eq!(
             node("kinetics:cogwheel", Some("z")),
             Some(Node {
                 kind: Kind::Cog,
-                axis: 2
+                axis: 2,
+                shafts: [true; 2]
             })
         );
         assert_eq!(node("minecraft:stone", Some("y")), None);

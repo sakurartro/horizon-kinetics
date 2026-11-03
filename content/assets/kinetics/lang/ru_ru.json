@@ -4,5 +4,11 @@
   "block.kinetics.large_cogwheel": "Большая шестерня",
   "block.kinetics.source": "Источник вращения (16 об/мин)",
   "block.kinetics.hand_crank": "Рукоять",
+  "block.kinetics.creative_motor": "Творческий мотор",
+  "block.kinetics.andesite_casing": "Андезитовый корпус",
+  "block.kinetics.andesite_encased_shaft": "Вал в андезитовом корпусе",
+  "block.kinetics.andesite_encased_cogwheel": "Шестерня в андезитовом корпусе",
+  "block.kinetics.andesite_encased_large_cogwheel": "Большая шестерня в андезитовом корпусе",
+  "item.kinetics.wrench": "Гаечный ключ",
   "itemGroup.kinetics.kinetics": "Кинетика"
 }

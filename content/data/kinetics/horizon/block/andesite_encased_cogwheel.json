@@ -1,0 +1,8 @@
+{
+  "template": "minecraft:stripped_oak_log",
+  "item": false,
+  "state_properties": {
+    "bottom_shaft": { "type": "boolean" },
+    "top_shaft": { "type": "boolean" }
+  }
+}
