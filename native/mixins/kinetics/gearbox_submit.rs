@@ -1,0 +1,40 @@
+// Draws what turns inside a gearbox: a half shaft out of each of its four faces, each at the speed its face
+// has (Create's GearboxRenderer). The box itself is the blockstate's model.
+fn kinetics_gearbox_submit(
+    game: &crate::game::Game<'_>,
+    pos: [i32; 3],
+    block: &str,
+    state: BlockStateId,
+    entity: &ModBlockEntity,
+    draw: &mut BlockEntityDraw,
+) {
+    use crate::game::kinetics as k;
+    use crate::game::kinetics_gearbox as g;
+    use horizon_world::nbt::{JavaString, Tag};
+    if block != g::GEARBOX {
+        return;
+    }
+    let Some(box_axis) = game.native_block_state_property(state, "axis").and_then(k::axis_of) else {
+        return;
+    };
+    let speed = match entity.nbt.get(&JavaString::from(k::SPEED_KEY)) {
+        Some(Tag::Float(bits)) => f32::from_bits(*bits),
+        _ => 0.0,
+    };
+    let ticks = draw.game_time as f64 + f64::from(draw.partial);
+    let centre = [0.5; 3];
+    let around = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    draw.light = k::part_light(around.map(|d| game.native_light([pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]])));
+    for (axis, positive) in g::faces(box_axis) {
+        let angle = k::angle(speed * k::gearbox_sign(box_axis, axis, positive), ticks);
+        draw.push();
+        draw.rotate_about(k::axis_vector(axis), angle, centre);
+        if let Some((turn, degrees)) = g::lay_face(axis, positive) {
+            draw.rotate_about(turn, degrees, centre);
+        }
+        if !game.native_draw_model(draw, g::LOOK_MODELS[0], 0xFF_FFFF) {
+            game.native_draw_model(draw, g::PART_MODELS[0], 0xFF_FFFF);
+        }
+        draw.pop();
+    }
+}

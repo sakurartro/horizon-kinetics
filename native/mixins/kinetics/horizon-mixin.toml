@@ -107,6 +107,73 @@ bindings = [
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
 
+# The gearbox: where it stands when placed and its vertical item (a block of its own), as a module of the bundle.
+[[module]]
+id = "gearbox"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_gearbox"
+source = "gearbox.rs"
+
+# A gearbox is placed on y, a vertical gearbox across the way the player faces.
+[[injection]]
+id = "gearbox-placement"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "gearbox_placement.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+# A vertical gearbox placed: it is made a gearbox at the end of the tick.
+[[injection]]
+id = "gearbox-changed"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_block_changed"
+helper = "gearbox_changed.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "dimension", ty = "LevelDimension", value = "dimension" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "new", ty = "BlockStateId", value = "new" },
+]
+
+[[injection]]
+id = "gearbox-settle"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "gearbox_settle.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# The half shafts inside a gearbox, baked beside the block models and drawn every frame.
+[[injection]]
+id = "gearbox-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "gearbox_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+[[injection]]
+id = "gearbox-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "gearbox_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
+
 # The hand crank. A new block `kinetics:hand_crank` with a `facing`: the rules are in crank.rs (module
 # `kinetics_crank`), the injections below are its hooks; the solver reads its speed in settle.rs.
 [[module]]

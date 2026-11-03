@@ -3,6 +3,8 @@
   "block.kinetics.cogwheel": "Cogwheel",
   "block.kinetics.large_cogwheel": "Large Cogwheel",
   "block.kinetics.source": "Rotation Source (16 RPM)",
+  "block.kinetics.gearbox": "Gearbox",
+  "block.kinetics.vertical_gearbox": "Vertical Gearbox",
   "block.kinetics.hand_crank": "Hand Crank",
   "block.kinetics.creative_motor": "Creative Motor",
   "block.kinetics.andesite_casing": "Andesite Casing",
