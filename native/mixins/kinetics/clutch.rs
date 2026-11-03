@@ -41,6 +41,24 @@ pub const HALF_MODEL: &str = "kinetics:block/clutch_half_part";
 pub const LOOK_HALF_MODEL: &str = "create:block/shaft_half";
 
 /// Whether `name` is a clutch or a gearshift.
+/// Create's static models of the split blocks, built along y, drawn over our placeholders (the blockstate models)
+/// while the pack from `tools/create_look.py` is on: clutch, clutch powered, gearshift, gearshift powered.
+pub const STATIC_LOOK_MODELS: [&str; 4] = [
+    "create:block/clutch/block",
+    "create:block/clutch/block_powered",
+    "create:block/gearshift/block",
+    "create:block/gearshift/block_powered",
+];
+
+pub fn static_look(name: &str, powered: bool) -> Option<&'static str> {
+    let first = match name {
+        "kinetics:clutch" => 0,
+        "kinetics:gearshift" => 2,
+        _ => return None,
+    };
+    Some(STATIC_LOOK_MODELS[first + usize::from(powered)])
+}
+
 pub fn is_split(name: &str) -> bool {
     matches!(name, "kinetics:clutch" | "kinetics:gearshift")
 }
@@ -127,6 +145,14 @@ fn axis_vector(axis: usize) -> [f32; 3] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_static_look_follows_the_block_and_its_power() {
+        assert_eq!(static_look("kinetics:clutch", false), Some("create:block/clutch/block"));
+        assert_eq!(static_look("kinetics:clutch", true), Some("create:block/clutch/block_powered"));
+        assert_eq!(static_look("kinetics:gearshift", true), Some("create:block/gearshift/block_powered"));
+        assert_eq!(static_look("kinetics:gearbox", false), None);
+    }
 
     #[test]
     fn a_clutch_follows_the_signal_and_cuts_a_tick_only_when_it_lets_go() {

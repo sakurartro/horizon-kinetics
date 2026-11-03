@@ -22,6 +22,18 @@ fn kinetics_submit(
         let centre = [0.5; 3];
         let around = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
         draw.light = k::part_light(around.map(|d| game.native_light([pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]])));
+        // Create's body over our placeholder, a hair larger so it covers it; laid along the axis like the casing's.
+        if let Some(model) = c::static_look(block, game.native_block_state_property(state, "powered") == Some("true")) {
+            draw.push();
+            draw.translate(centre);
+            draw.scale([1.001; 3]);
+            draw.translate([-0.5; 3]);
+            if let Some((turn, degrees)) = k::lay_along(axis) {
+                draw.rotate_about(turn, degrees, centre);
+            }
+            game.native_draw_model(draw, model, 0xFF_FFFF);
+            draw.pop();
+        }
         for half in 0..2u8 {
             let key = JavaString::from(if half == 0 { k::SPEED_KEY } else { c::SPEED_POS_KEY });
             let speed = match entity.nbt.get(&key) {
