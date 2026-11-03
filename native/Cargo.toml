@@ -50,6 +50,11 @@ path = "mixins/kinetics/girder.rs"
 name = "speed_controller"
 path = "mixins/kinetics/speed_controller.rs"
 
+# The flywheel's wheel easing: also the module the bundle adds to the game as `game::kinetics_flywheel`.
+[[test]]
+name = "flywheel"
+path = "mixins/kinetics/flywheel.rs"
+
 # The chain drive and chain gearshift's rules: also the module the bundle adds to the game as `game::kinetics_chain`.
 [[test]]
 name = "chain"

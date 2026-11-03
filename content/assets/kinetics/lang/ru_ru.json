@@ -30,5 +30,6 @@
   "block.kinetics.stressometer": "Стрессометр",
   "block.kinetics.metal_girder": "Металлическая балка",
   "block.kinetics.metal_girder_encased_shaft": "Металлическая балка с валом",
+  "block.kinetics.flywheel": "Маховик",
   "itemGroup.kinetics.kinetics": "Кинетика"
 }

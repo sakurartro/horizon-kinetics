@@ -1,16 +1,23 @@
 {
   "template": "minecraft:iron_block",
-  "properties": { "hardness": 5.0, "explosion_resistance": 6.0, "sounds": "minecraft:netherite_block" },
-  "state_properties": {
-    "axis": { "type": "enum", "values": ["x", "z"] },
-    "top": { "type": "boolean" },
-    "bottom": { "type": "boolean" }
+  "properties": {
+    "hardness": 5.0,
+    "explosion_resistance": 6.0,
+    "sounds": "minecraft:netherite_block"
   },
-  "shapes": {
-    "property": "axis",
-    "values": {
-      "x": [[0.25, 0.125, 0.0, 0.75, 0.875, 1.0], [0.0, 0.3125, 0.3125, 1.0, 0.6875, 0.6875]],
-      "z": [[0.0, 0.125, 0.25, 1.0, 0.875, 0.75], [0.3125, 0.3125, 0.0, 0.6875, 0.6875, 1.0]]
+  "state_properties": {
+    "axis": {
+      "type": "enum",
+      "values": [
+        "x",
+        "z"
+      ]
+    },
+    "top": {
+      "type": "boolean"
+    },
+    "bottom": {
+      "type": "boolean"
     }
   },
   "item": false

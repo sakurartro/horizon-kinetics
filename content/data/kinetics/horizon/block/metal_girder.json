@@ -1,18 +1,25 @@
 {
   "template": "minecraft:iron_chain",
-  "properties": { "hardness": 5.0, "explosion_resistance": 6.0, "sounds": "minecraft:netherite_block" },
-  "state_properties": {
-    "beam": { "type": "enum", "values": ["none", "x", "z", "xz"] },
-    "top": { "type": "boolean" },
-    "bottom": { "type": "boolean" }
+  "properties": {
+    "hardness": 5.0,
+    "explosion_resistance": 6.0,
+    "sounds": "minecraft:netherite_block"
   },
-  "shapes": {
-    "property": "beam",
-    "values": {
-      "none": [[0.25, 0.0, 0.25, 0.75, 1.0, 0.75]],
-      "x": [[0.0, 0.125, 0.25, 1.0, 0.875, 0.75]],
-      "z": [[0.25, 0.125, 0.0, 0.75, 0.875, 1.0]],
-      "xz": [[0.1875, 0.0, 0.1875, 0.8125, 1.0, 0.8125], [0.0, 0.125, 0.25, 1.0, 0.875, 0.75], [0.25, 0.125, 0.0, 0.75, 0.875, 1.0]]
+  "state_properties": {
+    "beam": {
+      "type": "enum",
+      "values": [
+        "none",
+        "x",
+        "z",
+        "xz"
+      ]
+    },
+    "top": {
+      "type": "boolean"
+    },
+    "bottom": {
+      "type": "boolean"
     }
   },
   "item": true

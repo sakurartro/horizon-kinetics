@@ -30,5 +30,6 @@
   "item.kinetics.metal_bracket": "Metal Bracket",
   "block.kinetics.metal_girder": "Metal Girder",
   "block.kinetics.metal_girder_encased_shaft": "Metal Girder Encased Shaft",
+  "block.kinetics.flywheel": "Flywheel",
   "itemGroup.kinetics.kinetics": "Kinetics"
 }
