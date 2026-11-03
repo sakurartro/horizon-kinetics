@@ -1,7 +1,9 @@
-// What clients get of a shaft or cogwheel: its speed.
+// What clients get of a shaft or cogwheel: its speed (and a creative motor's setting, which its value box shows).
 fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     use horizon_world::nbt::{JavaString, Tag};
-    if !crate::game::kinetics::has_block_entity(&entity.id) {
+    if !crate::game::kinetics::has_block_entity(&entity.id)
+        && !crate::game::kinetics_casing::has_block_entity(&entity.id)
+    {
         return;
     }
     let key = JavaString::from(crate::game::kinetics::SPEED_KEY);
@@ -11,6 +13,10 @@ fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     let pos_key = JavaString::from(crate::game::kinetics_clutch::SPEED_POS_KEY);
     if let Some(speed) = entity.nbt.get(&pos_key) {
         out.insert(pos_key, speed.clone());
+    }
+    let rpm_key = JavaString::from(crate::game::kinetics::RPM_KEY);
+    if let Some(rpm) = entity.nbt.get(&rpm_key) {
+        out.insert(rpm_key, rpm.clone());
     }
     *tag = Some(out);
 }

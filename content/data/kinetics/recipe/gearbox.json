@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": "kinetics:andesite_casing",
+    "C": "kinetics:cogwheel"
+  },
+  "pattern": [
+    " C ",
+    "CBC",
+    " C "
+  ],
+  "result": { "count": 1, "id": "kinetics:gearbox" }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds a resource pack with Create's shaft and cogwheel models, from a Create jar you downloaded yourself.
+"""Builds a resource pack with Create's shaft, cogwheel and andesite casing models, from a Create jar you downloaded yourself.
 
     python3 tools/create_look.py ~/Downloads/create-1.21.1-6.0.10.jar
 
@@ -12,8 +12,14 @@ Default output: the Horizon game folder's resourcepacks/kinetics-create-look.zip
 """
 import argparse, json, pathlib, re, sys, zipfile
 
-# Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis but shaft_half (clutch.rs), along z.
-MODELS = ["shaft", "cogwheel", "large_cogwheel", "shaft_half"]
+# Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis but shaft_half (casing.rs, clutch.rs), along z.
+MODELS = ["shaft", "cogwheel", "large_cogwheel"]
+# The andesite casing's (casing.rs LOOK_MODELS, STATIC_LOOK_MODELS): the cased parts' turning parts, and the static
+# models drawn over the placeholders; the cogwheels' have a variant per shaft end.
+MODELS += ["cogwheel_shaftless", "large_cogwheel_shaftless", "shaft_half", "andesite_casing", "encased_shaft/block_andesite"]
+MODELS += [f"andesite_encased_{big}cogwheel{ends}" for big in ("", "large_")
+           for ends in ("", "_top", "_bottom", "_top_bottom")]
+MODELS += ["hand_crank/handle"]  # crank.rs LOOK_MODELS (its shaft_half is the casing's)
 PACK_FORMAT = [97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
 
 
@@ -74,6 +80,7 @@ def main():
         if f"assets/create/textures/{path}.png" not in names:
             print(f"warning: {a.jar.name} has no texture {name}", file=sys.stderr)
 
+    MODELS.extend(["creative_motor/block", "creative_motor/block_vertical"])  # motor.rs LOOK_MODELS (its shaft_half is the casing's)
     for name in MODELS:
         model(f"create:block/{name}")
     files["pack.mcmeta"] = json.dumps({"pack": {

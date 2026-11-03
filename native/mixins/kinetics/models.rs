@@ -3,6 +3,8 @@ fn kinetics_models(models: &mut Vec<String>) {
     use crate::game::kinetics as k;
     // The Create look's models are missing without its pack: the game logs that and draws ours.
     models.extend(k::PART_MODELS.iter().chain(&k::LOOK_MODELS).map(|m| m.to_string()));
-    use crate::game::kinetics_clutch as c;
-    models.extend([c::HALF_MODEL, c::LOOK_HALF_MODEL].map(|m| m.to_string()));
+    use crate::game::kinetics_casing as c;
+    models.extend(c::PART_MODELS.iter().chain(&c::LOOK_MODELS).chain(&c::STATIC_LOOK_MODELS).map(|m| m.to_string()));
+    // The clutch's half shaft is ours: Create's `shaft_half` (its look) is the casing's, registered above.
+    models.push(crate::game::kinetics_clutch::HALF_MODEL.to_string());
 }
