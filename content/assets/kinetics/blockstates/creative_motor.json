@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "kinetics:block/motor_block" },
+    "facing=east": { "model": "kinetics:block/motor_block" },
+    "facing=south": { "model": "kinetics:block/motor_block" },
+    "facing=west": { "model": "kinetics:block/motor_block" },
+    "facing=up": { "model": "kinetics:block/motor_block" },
+    "facing=down": { "model": "kinetics:block/motor_block" }
+  }
+}

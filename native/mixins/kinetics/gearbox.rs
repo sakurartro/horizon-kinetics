@@ -1,7 +1,7 @@
 // Kinetics: the gearbox and its vertical item. Which axis a gearbox is placed with, which half shafts it
 // draws and how they are laid, with no game types: this file is a module of the bundle added to the game
 // as `game::kinetics_gearbox`, and is included by the crate's test `tests/gearbox.rs`. How the gearbox
-// passes speed on (`has_shaft`, `gearbox_sign`) is in runtime.rs.
+// passes speed on (`has_shaft_toward`, `gearbox_sign`) is in runtime.rs.
 //
 // The rules are ported from Create's `content/kinetics/gearbox/{GearboxBlock,VerticalGearboxItem,GearboxRenderer}.java`,
 // https://github.com/Creators-of-Create/Create, branch mc1.21.1/dev, commit 4148fd8.

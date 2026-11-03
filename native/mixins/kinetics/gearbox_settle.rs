@@ -12,8 +12,13 @@ fn kinetics_gearbox_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
         let first = game.native_block_property(pos, "axis").as_deref().and_then(k::axis_of).unwrap_or(0);
         let shaft_toward = |d: [i32; 3], axis: usize| {
             let p = [pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]];
-            k::node(&game.native_block(p), game.native_block_property(p, "axis").as_deref())
-                .is_some_and(|n| k::has_shaft(n, axis))
+            k::node_ends(
+                &game.native_block(p),
+                game.native_block_property(p, "axis").as_deref(),
+                game.native_block_property(p, "bottom_shaft").as_deref(),
+                game.native_block_property(p, "top_shaft").as_deref(),
+            )
+            .is_some_and(|n| k::has_shaft_toward(n, axis, d[axis] < 0))
         };
         let shafts = [
             shaft_toward([1, 0, 0], 0),
