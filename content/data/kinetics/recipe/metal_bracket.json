@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": ["minecraft:iron_nugget", "kinetics:shaft", "minecraft:andesite"],
+  "result": { "count": 4, "id": "kinetics:metal_bracket" }
+}

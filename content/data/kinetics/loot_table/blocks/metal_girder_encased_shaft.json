@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "entries": [{ "type": "minecraft:item", "name": "kinetics:metal_girder" }],
+      "rolls": 1
+    },
+    {
+      "condition": { "type": "minecraft:survives_explosion" },
+      "entries": [{ "type": "minecraft:item", "name": "kinetics:shaft" }],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "kinetics:blocks/metal_girder_encased_shaft"
+}

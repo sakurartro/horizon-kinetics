@@ -18,5 +18,10 @@ fn kinetics_update_tag(entity: &ModBlockEntity, tag: &mut Option<Compound>) {
     if let Some(rpm) = entity.nbt.get(&rpm_key) {
         out.insert(rpm_key, rpm.clone());
     }
+    // A bracket around a shaft or cogwheel.
+    let bracket = JavaString::from(crate::game::kinetics_bracket::BRACKET_KEY);
+    if let Some(value) = entity.nbt.get(&bracket) {
+        out.insert(bracket, value.clone());
+    }
     *tag = Some(out);
 }
