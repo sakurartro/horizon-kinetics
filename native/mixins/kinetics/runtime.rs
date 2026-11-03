@@ -84,9 +84,9 @@ pub struct Node {
 /// The kind of block `name` (`kinetics:shaft`), none for any other block.
 pub fn kind_of(name: &str) -> Option<Kind> {
     match name.strip_prefix("kinetics:")? {
-        "shaft" | "andesite_encased_shaft" => Some(Kind::Shaft),
-        "cogwheel" | "andesite_encased_cogwheel" => Some(Kind::Cog),
-        "large_cogwheel" | "andesite_encased_large_cogwheel" => Some(Kind::LargeCog),
+        "shaft" | "andesite_encased_shaft" | "brass_encased_shaft" => Some(Kind::Shaft),
+        "cogwheel" | "andesite_encased_cogwheel" | "brass_encased_cogwheel" => Some(Kind::Cog),
+        "large_cogwheel" | "andesite_encased_large_cogwheel" | "brass_encased_large_cogwheel" => Some(Kind::LargeCog),
         "source" => Some(Kind::Source),
         "clutch" => Some(Kind::Clutch(false)),
         "gearshift" => Some(Kind::Gearshift(false)),
