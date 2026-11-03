@@ -30,3 +30,7 @@ path = "mixins/kinetics/casing.rs"
 [[test]]
 name = "wrench"
 path = "mixins/kinetics/wrench_logic.rs"
+# The brackets' rules: also the module the bundle adds to the game as `game::kinetics_bracket`.
+[[test]]
+name = "bracket"
+path = "mixins/kinetics/bracket.rs"

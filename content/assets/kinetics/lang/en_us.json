@@ -14,5 +14,7 @@
   "block.kinetics.andesite_encased_cogwheel": "Andesite Encased Cogwheel",
   "block.kinetics.andesite_encased_large_cogwheel": "Andesite Encased Large Cogwheel",
   "item.kinetics.wrench": "Wrench",
+  "item.kinetics.wooden_bracket": "Wooden Bracket",
+  "item.kinetics.metal_bracket": "Metal Bracket",
   "itemGroup.kinetics.kinetics": "Kinetics"
 }
