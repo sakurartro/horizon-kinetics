@@ -449,3 +449,88 @@ bindings = [
   { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
   { name = "dimension", ty = "&str", value = "dimension" },
 ]
+
+
+# The rotation speed controller. A new block `kinetics:rotation_speed_controller` with a horizontal `axis`: its rules
+# are in speed_controller.rs (module `kinetics_speed_controller`) and the link to the large cogwheel above it in
+# runtime.rs. Its target is set like the creative motor's (the motor-* hooks above also take this block) and saved
+# under the same `rpm` key; its shaft is drawn by the generic `submit.rs`.
+[[module]]
+id = "speed-controller"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_speed_controller"
+source = "speed_controller.rs"
+
+# Placed across the large cogwheel above it, else across the player's view.
+[[injection]]
+id = "speed-controller-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "speed_controller_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+
+# The encased chain drive and the adjustable chain gearshift: how they chain to each other and follow redstone is a
+# module of its own (chain.rs).
+[[module]]
+id = "chain"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_chain"
+source = "chain.rs"
+
+# A chain drive placed or broken: it is chained to its neighbours at the end of the tick.
+[[injection]]
+id = "chain-changed"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_block_changed"
+helper = "chain_changed.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "dimension", ty = "LevelDimension", value = "dimension" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "old", ty = "BlockStateId", value = "old" },
+  { name = "new", ty = "BlockStateId", value = "new" },
+]
+
+# A neighbour of a chain drive or gearshift changed: its chain and its redstone are read at the end of the tick.
+[[injection]]
+id = "chain-neighbor"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_neighbor_changed"
+helper = "chain_neighbor.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "dimension", ty = "LevelDimension", value = "dimension" },
+  { name = "pos", ty = "BlockPos", value = "pos" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+]
+
+[[injection]]
+id = "chain-settle"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "chain_settle.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# Each frame: the chain drive's look and its turning shaft.
+[[injection]]
+id = "chain-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "chain_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]

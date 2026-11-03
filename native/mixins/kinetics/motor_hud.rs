@@ -6,16 +6,22 @@ fn kinetics_motor_hud(game: &mut crate::game::Game<'_>, layer: &str, batch: &mut
         return;
     }
     let Some((distance, hit)) = game.native_view_hit() else { return };
-    if hit.block != m::BLOCK || distance > 5.0 {
+    let controller = hit.block == crate::game::kinetics_speed_controller::BLOCK;
+    if (hit.block != m::BLOCK && !controller) || distance > 5.0 {
         return;
     }
     let pos = [hit.block_x, hit.block_y, hit.block_z];
     let local = [hit.x - f64::from(pos[0]), hit.y - f64::from(pos[1]), hit.z - f64::from(pos[2])];
     let Some(side) = m::hit_side(local) else { return };
-    let Some(facing) = game.native_block_property(pos, "facing").as_deref().and_then(m::dir_vec) else {
-        return;
+    // A controller's value box is on its four sides across the shaft; a motor's by its facing.
+    let active = if controller {
+        let axis = game.native_block_property(pos, "axis").as_deref().and_then(crate::game::kinetics::axis_of);
+        axis.is_some_and(|a| crate::game::kinetics_speed_controller::box_side(a, side))
+    } else {
+        let facing = game.native_block_property(pos, "facing").as_deref().and_then(m::dir_vec);
+        facing.is_some_and(|f| m::box_side(f, side))
     };
-    if !m::box_side(facing, side) {
+    if !active {
         return;
     }
     let rpm = match game.world.block_entities.get_mut(&(pos[0], pos[1], pos[2])) {
