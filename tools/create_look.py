@@ -20,6 +20,8 @@ MODELS += ["cogwheel_shaftless", "large_cogwheel_shaftless", "shaft_half", "ande
 MODELS += [f"andesite_encased_{big}cogwheel{ends}" for big in ("", "large_")
            for ends in ("", "_top", "_bottom", "_top_bottom")]
 MODELS += ["hand_crank/handle"]  # crank.rs LOOK_MODELS (its shaft_half is the casing's)
+# The gearbox's and the split blocks' static models (gearbox.rs STATIC_LOOK, clutch.rs STATIC_LOOK_MODELS).
+MODELS += ["gearbox/block", "clutch/block", "clutch/block_powered", "gearshift/block", "gearshift/block_powered"]
 PACK_FORMAT = [97, 1]  # Minecraft 26.3 (horizon-core version.rs RESOURCE_PACK_FORMAT)
 
 

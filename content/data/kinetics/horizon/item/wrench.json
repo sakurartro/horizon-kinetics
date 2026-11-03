@@ -1,1 +1,1 @@
-{ "template": "minecraft:flint", "components": { "minecraft:max_stack_size": 1 } }
+{ "template": "minecraft:flint", "max_stack_size": 1 }

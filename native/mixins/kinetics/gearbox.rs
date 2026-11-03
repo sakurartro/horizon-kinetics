@@ -38,6 +38,8 @@ pub const VERTICAL: &str = "kinetics:vertical_gearbox";
 pub const PART_MODELS: [&str; 1] = ["kinetics:block/gearbox_shaft_half"];
 /// Create's own, drawn first while the pack from `tools/create_look.py` is on.
 pub const LOOK_MODELS: [&str; 1] = ["create:block/shaft_half"];
+/// Create's box, built along y, drawn over our placeholder (the blockstate model) while the pack is on.
+pub const STATIC_LOOK: &str = "create:block/gearbox/block";
 
 /// The axis (0 = x, 1 = y, 2 = z) a vertical gearbox is first placed with: the one across the way the player
 /// faces, `player.getDirection().getClockWise().getAxis()`. `yaw` is the placer's, in degrees (0 faces +z).
