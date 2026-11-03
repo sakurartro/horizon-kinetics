@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=x": { "model": "kinetics:block/shaft_block" },
+    "axis=y": { "model": "kinetics:block/shaft_block" },
+    "axis=z": { "model": "kinetics:block/shaft_block" }
+  }
+}

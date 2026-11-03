@@ -47,10 +47,40 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
                 g.native_block_property(p, "powered").as_deref(),
             );
         }
+        if crate::game::kinetics_chain::is_chain(&name) {
+            // A chain drive or gearshift: its chain, and the signal its block entity saved.
+            let key = JavaString::from(crate::game::kinetics_chain::SIGNAL_KEY);
+            let signal = match cell.borrow_mut().world.block_entities.get_mut(&(p[0], p[1], p[2])) {
+                Some(BlockEntity::Mod(m)) => match m.nbt.get(&key) {
+                    Some(Tag::Int(v)) => *v,
+                    _ => 0,
+                },
+                _ => 0,
+            };
+            let g = cell.borrow();
+            return k::chain_node(
+                &name,
+                g.native_block_property(p, "axis").as_deref(),
+                g.native_block_property(p, "part").as_deref(),
+                g.native_block_property(p, crate::game::kinetics_chain::FIRST).as_deref(),
+                signal,
+            );
+        }
         if name == crate::game::kinetics_crank::BLOCK {
             // A hand crank: its facing, and the speed its turner gives it.
             let turn = crate::game::kinetics_crank::speed(dimension, p);
             return k::crank_node(&cell.borrow().native_block_property(p, "facing")?, turn);
+        }
+        if name == "kinetics:powered_shaft" {
+            // A powered shaft: its generator's speed, saved in its block entity (0 until set).
+            let rpm = match cell.borrow_mut().world.block_entities.get_mut(&(p[0], p[1], p[2])) {
+                Some(BlockEntity::Mod(m)) => match m.nbt.get(&JavaString::from(k::RPM_KEY)) {
+                    Some(Tag::Int(v)) => *v,
+                    _ => 0,
+                },
+                _ => 0,
+            };
+            return k::powered_shaft_node(cell.borrow().native_block_property(p, "axis").as_deref(), rpm);
         }
         let controller = name == crate::game::kinetics_speed_controller::BLOCK;
         if name != crate::game::kinetics_motor::BLOCK && !controller {

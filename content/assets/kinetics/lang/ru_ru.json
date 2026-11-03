@@ -14,6 +14,14 @@
   "block.kinetics.andesite_encased_cogwheel": "Шестерня в андезитовом корпусе",
   "block.kinetics.andesite_encased_large_cogwheel": "Большая шестерня в андезитовом корпусе",
   "block.kinetics.rotation_speed_controller": "Регулятор скорости вращения",
+  "block.kinetics.encased_chain_drive": "Цепная передача в корпусе",
+  "block.kinetics.adjustable_chain_gearshift": "Регулируемая цепная передача",
+  "block.kinetics.powered_shaft": "Вал с приводом",
+  "block.kinetics.brass_casing": "Латунный корпус",
+  "block.kinetics.brass_encased_shaft": "Вал в латунном корпусе",
+  "block.kinetics.brass_encased_cogwheel": "Шестерня в латунном корпусе",
+  "block.kinetics.brass_encased_large_cogwheel": "Большая шестерня в латунном корпусе",
+  "block.kinetics.copper_casing": "Медный корпус",
   "item.kinetics.wrench": "Гаечный ключ",
   "itemGroup.kinetics.kinetics": "Кинетика"
 }
