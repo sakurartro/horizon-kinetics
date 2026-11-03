@@ -9,3 +9,8 @@ description = "Shafts and cogwheels for Horizon: the rotation network logic and 
 # The same file the bundle adds to the game as `game::kinetics`.
 [lib]
 path = "mixins/kinetics/runtime.rs"
+
+# The creative motor's pure rules, also added to the game as `game::kinetics_motor`; its tests are their own target.
+[[test]]
+name = "motor"
+path = "mixins/kinetics/motor.rs"
