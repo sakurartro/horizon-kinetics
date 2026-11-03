@@ -13,6 +13,8 @@
   "block.kinetics.andesite_encased_shaft": "Вал в андезитовом корпусе",
   "block.kinetics.andesite_encased_cogwheel": "Шестерня в андезитовом корпусе",
   "block.kinetics.andesite_encased_large_cogwheel": "Большая шестерня в андезитовом корпусе",
+  "block.kinetics.encased_chain_drive": "Цепная передача в корпусе",
+  "block.kinetics.adjustable_chain_gearshift": "Регулируемая цепная передача",
   "item.kinetics.wrench": "Гаечный ключ",
   "itemGroup.kinetics.kinetics": "Кинетика"
 }

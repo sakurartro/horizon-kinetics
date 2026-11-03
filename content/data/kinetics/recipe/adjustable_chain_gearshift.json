@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "kinetics:encased_chain_drive",
+    "minecraft:redstone"
+  ],
+  "result": {
+    "id": "kinetics:adjustable_chain_gearshift",
+    "count": 1
+  }
+}
