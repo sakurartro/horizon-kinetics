@@ -14,3 +14,11 @@ path = "mixins/kinetics/runtime.rs"
 [[test]]
 name = "motor"
 path = "mixins/kinetics/motor.rs"
+# casing.rs is a module of the bundle like runtime.rs, with its tests in a target of their own.
+[[test]]
+name = "casing"
+path = "mixins/kinetics/casing.rs"
+# The wrench's choices: also the module the bundle adds to the game as `game::kinetics_wrench`.
+[[test]]
+name = "wrench"
+path = "mixins/kinetics/wrench_logic.rs"

@@ -11,7 +11,13 @@ fn kinetics_settle(game: &mut crate::game::Game<'_>, dimension: &str) {
     let speeds = k::solve(&changed, |p| {
         let name = cell.borrow().native_block(p);
         if name != crate::game::kinetics_motor::BLOCK {
-            return k::node(&name, cell.borrow().native_block_property(p, "axis").as_deref());
+            let g = cell.borrow();
+            return k::node_ends(
+                &name,
+                g.native_block_property(p, "axis").as_deref(),
+                g.native_block_property(p, "bottom_shaft").as_deref(),
+                g.native_block_property(p, "top_shaft").as_deref(),
+            );
         }
         // A motor's end and its setting (saved in its block entity, 16 until set).
         let rpm = match cell.borrow_mut().world.block_entities.get_mut(&(p[0], p[1], p[2])) {

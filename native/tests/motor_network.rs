@@ -2,7 +2,7 @@
 use horizon_mod_kinetics::{Kind, Node, Pos, motor_node, solve};
 
 fn shaft(axis: usize) -> Node {
-    Node { kind: Kind::Shaft, axis }
+    Node { kind: Kind::Shaft, axis, shafts: [true; 2] }
 }
 
 fn run(blocks: Vec<(Pos, Node)>, changed: Pos) -> impl Fn(Pos) -> f32 {

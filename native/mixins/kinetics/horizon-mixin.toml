@@ -15,6 +15,12 @@ file = "crates/horizon-client/src/game.rs"
 name = "kinetics"
 source = "runtime.rs"
 
+[[module]]
+id = "wrench-logic"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_wrench"
+source = "wrench_logic.rs"
+
 # Shafts and cogwheels get a block entity holding their speed.
 [[injection]]
 id = "block-entity"
@@ -70,6 +76,20 @@ target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models
 helper = "models.rs"
 bindings = [
   { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# The wrench: a click on a kinetic block turns it or, sneaking, picks it up.
+[[injection]]
+id = "wrench"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_use_item_on"
+helper = "wrench.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "stack", ty = "&ItemStack", value = "stack" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "face", ty = "[i32; 3]", value = "face" },
+  { name = "claimed", ty = "&mut bool", value = "&mut *claimed" },
 ]
 
 # Each frame: the part, turned by its speed.
@@ -186,6 +206,41 @@ id = "motor-submit"
 kind = "HEAD"
 target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
 helper = "motor_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]
+
+# The casing: its rules (cased variants, model names) are a module of their own.
+[[module]]
+id = "casing"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_casing"
+source = "casing.rs"
+
+# A casing used on a shaft or cogwheel: it becomes the cased block.
+[[injection]]
+id = "casing-use"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_use_item_on"
+helper = "casing_use.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "stack", ty = "&ItemStack", value = "stack" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "claimed", ty = "&mut bool", value = "&mut *claimed" },
+]
+
+# Each frame: the casing's look, and what turns inside a cased part.
+[[injection]]
+id = "casing-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "casing_submit.rs"
 bindings = [
   { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
   { name = "pos", ty = "[i32; 3]", value = "pos" },
