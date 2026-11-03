@@ -1,44 +1,468 @@
 {
-  "parent": "kinetics:block/gearbox_block",
-  "textures": { "shaft": "minecraft:block/andesite" },
-  "elements": [
-    { "from": [0, 0, 0], "to": [2, 16, 16],
-      "faces": {
-        "north": { "uv": [14, 0, 16, 16], "texture": "#casing" },
-        "south": { "uv": [0, 0, 2, 16], "texture": "#casing" },
-        "east":  { "uv": [0, 0, 16, 16], "texture": "#casing" },
-        "west":  { "uv": [0, 0, 16, 16], "texture": "#casing" },
-        "up":    { "uv": [0, 0, 2, 16], "texture": "#casing" },
-        "down":  { "uv": [0, 0, 2, 16], "texture": "#casing" } } },
-    { "from": [14, 0, 0], "to": [16, 16, 16],
-      "faces": {
-        "north": { "uv": [0, 0, 2, 16], "texture": "#casing" },
-        "south": { "uv": [14, 0, 16, 16], "texture": "#casing" },
-        "east":  { "uv": [0, 0, 16, 16], "texture": "#casing" },
-        "west":  { "uv": [0, 0, 16, 16], "texture": "#casing" },
-        "up":    { "uv": [14, 0, 16, 16], "texture": "#casing" },
-        "down":  { "uv": [14, 0, 16, 16], "texture": "#casing" } } },
-    { "from": [2, 1, 1], "to": [14, 15, 15],
-      "faces": {
-        "north": { "uv": [2, 1, 14, 15], "texture": "#core" },
-        "south": { "uv": [2, 1, 14, 15], "texture": "#core" },
-        "up":    { "uv": [2, 1, 14, 15], "texture": "#core" },
-        "down":  { "uv": [2, 1, 14, 15], "texture": "#core" } } },
-    { "from": [6, 6, 0], "to": [10, 10, 16],
-      "faces": {
-        "north": { "uv": [6, 6, 10, 10], "texture": "#shaft" },
-        "south": { "uv": [6, 6, 10, 10], "texture": "#shaft" },
-        "east":  { "uv": [6, 0, 10, 16], "texture": "#shaft" },
-        "west":  { "uv": [6, 0, 10, 16], "texture": "#shaft" },
-        "up":    { "uv": [6, 0, 10, 16], "texture": "#shaft" },
-        "down":  { "uv": [6, 0, 10, 16], "texture": "#shaft" } } },
-    { "from": [6, 0, 6], "to": [10, 16, 10],
-      "faces": {
-        "north": { "uv": [6, 0, 10, 16], "texture": "#shaft" },
-        "south": { "uv": [6, 0, 10, 16], "texture": "#shaft" },
-        "east":  { "uv": [6, 0, 10, 16], "texture": "#shaft" },
-        "west":  { "uv": [6, 0, 10, 16], "texture": "#shaft" },
-        "up":    { "uv": [6, 6, 10, 10], "texture": "#shaft" },
-        "down":  { "uv": [6, 6, 10, 10], "texture": "#shaft" } } }
-  ]
+ "parent": "kinetics:block/gearbox_block",
+ "textures": {
+  "shaft": "minecraft:block/andesite"
+ },
+ "elements": [
+  {
+   "from": [
+    0,
+    0,
+    0
+   ],
+   "to": [
+    2,
+    16,
+    16
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      14,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      2,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      2,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      2,
+      16
+     ],
+     "texture": "#casing"
+    }
+   }
+  },
+  {
+   "from": [
+    14,
+    0,
+    0
+   ],
+   "to": [
+    16,
+    16,
+    16
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      2,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "south": {
+     "uv": [
+      14,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "up": {
+     "uv": [
+      14,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    },
+    "down": {
+     "uv": [
+      14,
+      0,
+      16,
+      16
+     ],
+     "texture": "#casing"
+    }
+   }
+  },
+  {
+   "from": [
+    2,
+    1,
+    1
+   ],
+   "to": [
+    14,
+    15,
+    15
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      2,
+      1,
+      14,
+      15
+     ],
+     "texture": "#core"
+    },
+    "south": {
+     "uv": [
+      2,
+      1,
+      14,
+      15
+     ],
+     "texture": "#core"
+    },
+    "up": {
+     "uv": [
+      2,
+      1,
+      14,
+      15
+     ],
+     "texture": "#core"
+    },
+    "down": {
+     "uv": [
+      2,
+      1,
+      14,
+      15
+     ],
+     "texture": "#core"
+    }
+   }
+  },
+  {
+   "from": [
+    6,
+    6,
+    0
+   ],
+   "to": [
+    10,
+    10,
+    16
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      6,
+      6,
+      10,
+      10
+     ],
+     "texture": "#shaft"
+    },
+    "south": {
+     "uv": [
+      6,
+      6,
+      10,
+      10
+     ],
+     "texture": "#shaft"
+    },
+    "east": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    },
+    "west": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    },
+    "up": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    },
+    "down": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    }
+   }
+  },
+  {
+   "from": [
+    6,
+    0,
+    6
+   ],
+   "to": [
+    10,
+    16,
+    10
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    },
+    "south": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    },
+    "east": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    },
+    "west": {
+     "uv": [
+      6,
+      0,
+      10,
+      16
+     ],
+     "texture": "#shaft"
+    },
+    "up": {
+     "uv": [
+      6,
+      6,
+      10,
+      10
+     ],
+     "texture": "#shaft"
+    },
+    "down": {
+     "uv": [
+      6,
+      6,
+      10,
+      10
+     ],
+     "texture": "#shaft"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.625,
+    0.625,
+    0.625
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    3,
+    0
+   ],
+   "scale": [
+    0.25,
+    0.25,
+    0.25
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    75,
+    45,
+    0
+   ],
+   "translation": [
+    0,
+    2.5,
+    0
+   ],
+   "scale": [
+    0.375,
+    0.375,
+    0.375
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    75,
+    45,
+    0
+   ],
+   "translation": [
+    0,
+    2.5,
+    0
+   ],
+   "scale": [
+    0.375,
+    0.375,
+    0.375
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    45,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    225,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ }
 }

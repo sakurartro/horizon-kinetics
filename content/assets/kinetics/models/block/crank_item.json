@@ -1,0 +1,318 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "shaft": "minecraft:block/andesite",
+  "arm": "minecraft:block/stripped_spruce_log",
+  "grip": "minecraft:block/oak_planks",
+  "particle": "minecraft:block/stripped_oak_log"
+ },
+ "elements": [
+  {
+   "from": [
+    6,
+    0,
+    6
+   ],
+   "to": [
+    10,
+    8,
+    10
+   ],
+   "faces": {
+    "north": {
+     "texture": "#shaft"
+    },
+    "south": {
+     "texture": "#shaft"
+    },
+    "east": {
+     "texture": "#shaft"
+    },
+    "west": {
+     "texture": "#shaft"
+    },
+    "up": {
+     "texture": "#shaft"
+    },
+    "down": {
+     "texture": "#shaft"
+    }
+   }
+  },
+  {
+   "from": [
+    5,
+    2,
+    5
+   ],
+   "to": [
+    11,
+    5,
+    11
+   ],
+   "faces": {
+    "north": {
+     "texture": "#arm"
+    },
+    "south": {
+     "texture": "#arm"
+    },
+    "east": {
+     "texture": "#arm"
+    },
+    "west": {
+     "texture": "#arm"
+    },
+    "up": {
+     "texture": "#arm"
+    },
+    "down": {
+     "texture": "#arm"
+    }
+   }
+  },
+  {
+   "from": [
+    -2,
+    3,
+    6
+   ],
+   "to": [
+    14,
+    6,
+    10
+   ],
+   "faces": {
+    "north": {
+     "texture": "#arm"
+    },
+    "south": {
+     "texture": "#arm"
+    },
+    "east": {
+     "texture": "#arm"
+    },
+    "west": {
+     "texture": "#arm"
+    },
+    "up": {
+     "texture": "#arm"
+    },
+    "down": {
+     "texture": "#arm"
+    }
+   }
+  },
+  {
+   "from": [
+    0,
+    6,
+    7
+   ],
+   "to": [
+    2,
+    7,
+    9
+   ],
+   "faces": {
+    "north": {
+     "texture": "#arm"
+    },
+    "south": {
+     "texture": "#arm"
+    },
+    "east": {
+     "texture": "#arm"
+    },
+    "west": {
+     "texture": "#arm"
+    },
+    "up": {
+     "texture": "#arm"
+    },
+    "down": {
+     "texture": "#arm"
+    }
+   }
+  },
+  {
+   "from": [
+    -0.5,
+    7,
+    6.5
+   ],
+   "to": [
+    2.5,
+    13,
+    9.5
+   ],
+   "rotation": {
+    "angle": 45,
+    "axis": "y",
+    "origin": [
+     1,
+     7,
+     8
+    ]
+   },
+   "faces": {
+    "north": {
+     "texture": "#grip"
+    },
+    "south": {
+     "texture": "#grip"
+    },
+    "east": {
+     "texture": "#grip"
+    },
+    "west": {
+     "texture": "#grip"
+    },
+    "up": {
+     "texture": "#grip"
+    },
+    "down": {
+     "texture": "#grip"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.625,
+    0.625,
+    0.625
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    3,
+    0
+   ],
+   "scale": [
+    0.25,
+    0.25,
+    0.25
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    75,
+    45,
+    0
+   ],
+   "translation": [
+    0,
+    2.5,
+    0
+   ],
+   "scale": [
+    0.375,
+    0.375,
+    0.375
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    75,
+    45,
+    0
+   ],
+   "translation": [
+    0,
+    2.5,
+    0
+   ],
+   "scale": [
+    0.375,
+    0.375,
+    0.375
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    45,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    225,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ }
+}

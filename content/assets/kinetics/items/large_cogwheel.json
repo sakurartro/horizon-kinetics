@@ -1,1 +1,6 @@
-{ "model": { "type": "minecraft:model", "model": "kinetics:block/large_cogwheel_part" } }
+{
+ "model": {
+  "type": "minecraft:model",
+  "model": "kinetics:block/large_cogwheel_item"
+ }
+}
