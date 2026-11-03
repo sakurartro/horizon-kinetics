@@ -66,6 +66,9 @@ pub enum Kind {
     /// The creative motor: its shaft is at one end of its axis only, `toward` (+1 / -1) the end, and it gives its
     /// setting `rpm` (signed, -256 to 256). `kind_of` can only name it: the facing and the setting are the block's.
     Motor { toward: i8, rpm: i16 },
+    /// The rotation speed controller: a shaft through its block on a horizontal axis, linked to the large cogwheel
+    /// above it (`controller_partner`); `rpm` is its saved target. `kind_of` can only name it.
+    Controller { rpm: i16 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -90,6 +93,7 @@ pub fn kind_of(name: &str) -> Option<Kind> {
         "gearbox" => Some(Kind::Gearbox),
         "hand_crank" => Some(Kind::Crank { toward: 1, rpm: 0 }),
         "creative_motor" => Some(Kind::Motor { toward: 1, rpm: 16 }),
+        "rotation_speed_controller" => Some(Kind::Controller { rpm: 16 }),
         _ => None,
     }
 }
@@ -188,6 +192,36 @@ pub fn motor_node(facing: &str, rpm: i32) -> Option<Node> {
     let rpm = rpm.clamp(-256, 256) as i16;
     // Its shaft is at the `toward` end only.
     Some(Node { kind: Kind::Motor { toward, rpm }, axis, shafts: [toward < 0, toward > 0] })
+}
+
+/// The rotation speed controller on `axis` (`x` or `z`) with its saved target.
+pub fn controller_node(axis: &str, rpm: i32) -> Option<Node> {
+    let axis = axis_of(axis).filter(|&a| a != 1)?;
+    Some(Node { kind: Kind::Controller { rpm: rpm.clamp(-256, 256) as i16 }, axis, shafts: [true; 2] })
+}
+
+/// The other end of the controller link (`isLargeCogToSpeedController`): for a controller the large cogwheel on top
+/// of it, for a large cogwheel on a horizontal axis the controller below it; either way the axes must differ.
+fn controller_partner(p: Pos, n: Node, get: &impl Fn(Pos) -> Option<Node>) -> Option<Pos> {
+    let q = match n.kind {
+        Kind::Controller { .. } => add(p, [0, 1, 0]),
+        Kind::LargeCog if n.axis != 1 => add(p, [0, -1, 0]),
+        _ => return None,
+    };
+    let m = get(q)?;
+    let (cog, ctrl) = if large(n) { (n, m) } else { (m, n) };
+    (large(cog) && matches!(ctrl.kind, Kind::Controller { .. }) && cog.axis != 1 && cog.axis != ctrl.axis).then_some(q)
+}
+
+/// The speed the controller link hands from one side to the other (`SpeedControllerBlockEntity.getConveyedSpeed`):
+/// the target, but a side already turning the target's way at least that fast keeps going; nothing without input
+/// or target. shortcut: Create's pick of the side that powers the controller is reduced to "the side reached first".
+pub fn conveyed(target: i32, input: f32) -> f32 {
+    let t = target as f32;
+    if t == 0.0 || input == 0.0 {
+        return 0.0;
+    }
+    if (t < 0.0) == (input < 0.0) { if t < 0.0 { t.min(input) } else { t.max(input) } } else { t }
 }
 
 /// The hand crank at an axis, from its block state's `facing` (the way the handle points) and the speed
@@ -406,7 +440,8 @@ pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashM
             while i < nodes.len() && nodes.len() < MAX_NODES {
                 let (v, n) = nodes[i];
                 i += 1;
-                for (q, _) in links(v, n, &get) {
+                let across = controller_partner(v.0, n, &get).map(|q| (q, 0));
+                for (q, _) in links(v, n, &get).into_iter().chain(across.map(|q| (q, 1.0))) {
                     if seen.insert(q) {
                         nodes.push((q, get(q.0).expect("linked node exists")));
                     }
@@ -425,6 +460,16 @@ pub fn solve_halves(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> HashM
             while let Some(v) = queue.pop_front() {
                 let n = get(v.0).expect("queued node exists");
                 let sv = speed[&v];
+                // The controller link is one way from whichever side is reached first: it only fills a side
+                // that has no speed yet (a second source on the other side isn't checked).
+                if let Some(q) = controller_partner(v.0, n, &get).map(|q| (q, 0)).filter(|q| seen.contains(q) && !speed.contains_key(q)) {
+                    let target = match (n.kind, get(q.0).map(|m| m.kind)) {
+                        (Kind::Controller { rpm }, _) | (_, Some(Kind::Controller { rpm })) => i32::from(rpm),
+                        _ => 0,
+                    };
+                    speed.insert(q, conveyed(target, sv));
+                    queue.push_back(q);
+                }
                 for (q, f) in links(v, n, &get) {
                     if !seen.contains(&q) {
                         continue; // past the cap
@@ -496,7 +541,7 @@ pub fn take(dimension: &str) -> Vec<Pos> {
 pub fn has_block_entity(name: &str) -> bool {
     matches!(
         kind_of(name),
-        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Motor { .. } | Kind::Crank { .. } | Kind::Gearbox | Kind::Clutch(_) | Kind::Gearshift(_))
+        Some(Kind::Shaft | Kind::Cog | Kind::LargeCog | Kind::Controller { .. } | Kind::Motor { .. } | Kind::Crank { .. } | Kind::Gearbox | Kind::Clutch(_) | Kind::Gearshift(_))
     )
 }
 
@@ -517,7 +562,7 @@ pub const LOOK_MODELS: [&str; 3] = [
 
 pub fn look_model(kind: Kind) -> Option<&'static str> {
     match kind {
-        Kind::Shaft => Some(LOOK_MODELS[0]),
+        Kind::Shaft | Kind::Controller { .. } => Some(LOOK_MODELS[0]),
         Kind::Cog => Some(LOOK_MODELS[1]),
         Kind::LargeCog => Some(LOOK_MODELS[2]),
         _ => None,
@@ -526,7 +571,7 @@ pub fn look_model(kind: Kind) -> Option<&'static str> {
 
 pub fn part_model(kind: Kind) -> Option<&'static str> {
     match kind {
-        Kind::Shaft => Some(PART_MODELS[0]),
+        Kind::Shaft | Kind::Controller { .. } => Some(PART_MODELS[0]),
         Kind::Cog => Some(PART_MODELS[1]),
         Kind::LargeCog => Some(PART_MODELS[2]),
         _ => None,
@@ -991,5 +1036,37 @@ mod tests {
         );
         assert_eq!(node("minecraft:stone", Some("y")), None);
         assert_eq!(node("kinetics:shaft", None), None);
+    }
+    #[test]
+    fn a_controller_sets_the_cogwheel_above_it_from_either_side() {
+        let c = |t| Controller { rpm: t };
+        // Controller on x with a large cogwheel on z above it; the shaft side is powered.
+        let w = [([0, 0, 0], Source, X), ([1, 0, 0], c(64), X), ([1, 1, 0], LargeCog, Z), ([2, 0, 0], Shaft, X), ([2, 2, 0], Cog, Z)];
+        let s = solve(&[[0, 0, 0]], world(&w));
+        assert_eq!(s[&[1, 1, 0]], 64.0);
+        assert_eq!(s[&[2, 0, 0]], 16.0);
+        assert_eq!(s[&[2, 2, 0]], -128.0); // the cog meshes with the large one
+        // The cogwheel side powered: the controller and its shaft get the target.
+        let w = [([1, 1, 1], Source, Z), ([1, 1, 0], Shaft, Z), ([1, 1, -1], LargeCog, Z), ([1, 0, -1], c(-32), X), ([2, 0, -1], Shaft, X)];
+        let s = solve(&[[1, 1, 1]], world(&w));
+        assert_eq!(s[&[1, 0, -1]], -32.0);
+        assert_eq!(s[&[2, 0, -1]], -32.0);
+        // Target 0 stops the other side; a cogwheel on the controller's own axis isn't linked.
+        let w = [([0, 0, 0], Source, X), ([1, 0, 0], c(0), X), ([1, 1, 0], LargeCog, Z)];
+        assert_eq!(solve(&[[0, 0, 0]], world(&w))[&[1, 1, 0]], 0.0);
+        let w = [([0, 0, 0], Source, X), ([1, 0, 0], c(64), X), ([1, 1, 0], LargeCog, X)];
+        assert_eq!(solve(&[[0, 0, 0]], world(&w))[&[1, 1, 0]], 0.0);
+    }
+
+    #[test]
+    fn the_conveyed_speed_is_the_target_unless_the_input_is_already_past_it() {
+        assert_eq!(conveyed(64, 16.0), 64.0);
+        assert_eq!(conveyed(16, 64.0), 64.0);
+        assert_eq!(conveyed(-16, -64.0), -64.0);
+        assert_eq!(conveyed(-16, 64.0), -16.0);
+        assert_eq!(conveyed(0, 64.0), 0.0);
+        assert_eq!(conveyed(64, 0.0), 0.0);
+        assert_eq!(controller_node("y", 5), None);
+        assert_eq!(controller_node("z", 999).map(|n| n.kind), Some(Controller { rpm: 256 }));
     }
 }

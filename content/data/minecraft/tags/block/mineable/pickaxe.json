@@ -1,1 +1,1 @@
-{ "values": ["kinetics:shaft", "kinetics:source", "kinetics:gearbox", "kinetics:vertical_gearbox", "kinetics:hand_crank"] }
+{ "values": ["kinetics:shaft", "kinetics:source", "kinetics:gearbox", "kinetics:vertical_gearbox", "kinetics:hand_crank", "kinetics:rotation_speed_controller"] }

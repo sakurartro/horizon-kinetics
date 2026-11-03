@@ -30,3 +30,7 @@ path = "mixins/kinetics/casing.rs"
 [[test]]
 name = "wrench"
 path = "mixins/kinetics/wrench_logic.rs"
+# The rotation speed controller's pure rules, also added to the game as `game::kinetics_speed_controller`.
+[[test]]
+name = "speed_controller"
+path = "mixins/kinetics/speed_controller.rs"

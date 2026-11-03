@@ -392,3 +392,26 @@ bindings = [
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
+
+# The rotation speed controller. A new block `kinetics:rotation_speed_controller` with a horizontal `axis`: its rules
+# are in speed_controller.rs (module `kinetics_speed_controller`) and the link to the large cogwheel above it in
+# runtime.rs. Its target is set like the creative motor's (the motor-* hooks above also take this block) and saved
+# under the same `rpm` key; its shaft is drawn by the generic `submit.rs`.
+[[module]]
+id = "speed-controller"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_speed_controller"
+source = "speed_controller.rs"
+
+# Placed across the large cogwheel above it, else across the player's view.
+[[injection]]
+id = "speed-controller-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "speed_controller_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
