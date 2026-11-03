@@ -13,6 +13,10 @@
   "block.kinetics.andesite_encased_shaft": "Andesite Encased Shaft",
   "block.kinetics.andesite_encased_cogwheel": "Andesite Encased Cogwheel",
   "block.kinetics.andesite_encased_large_cogwheel": "Andesite Encased Large Cogwheel",
+  "block.kinetics.brass_casing": "Brass Casing",
+  "block.kinetics.brass_encased_shaft": "Brass Encased Shaft",
+  "block.kinetics.brass_encased_cogwheel": "Brass Encased Cogwheel",
+  "block.kinetics.brass_encased_large_cogwheel": "Brass Encased Large Cogwheel",
   "block.kinetics.copper_casing": "Copper Casing",
   "item.kinetics.wrench": "Wrench",
   "itemGroup.kinetics.kinetics": "Kinetics"
