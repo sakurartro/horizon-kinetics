@@ -19,7 +19,10 @@ fn kinetics_wrench(
     match w::action(k::kind_of(&block).is_some(), sneaking, axis.as_deref().and_then(k::axis_of), face) {
         w::Action::Nothing => return,
         w::Action::Rotate(value) => {
-            game.native_set_block_property_with(pos, "axis", value, 3);
+            // A controller's axis is horizontal only.
+            if value != "y" || block != crate::game::kinetics_speed_controller::BLOCK {
+                game.native_set_block_property_with(pos, "axis", value, 3);
+            }
         }
         w::Action::Remove => {
             // The block's item goes to the player's inventory (nothing in creative); a full one drops it.

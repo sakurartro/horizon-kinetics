@@ -30,3 +30,27 @@ path = "mixins/kinetics/casing.rs"
 [[test]]
 name = "wrench"
 path = "mixins/kinetics/wrench_logic.rs"
+# The goggles' pure rules, also added to the game as `game::kinetics_goggles`; its tests are their own target.
+[[test]]
+name = "goggles"
+path = "mixins/kinetics/goggles.rs"
+
+# The brackets' rules: also the module the bundle adds to the game as `game::kinetics_bracket`.
+[[test]]
+name = "bracket"
+path = "mixins/kinetics/bracket.rs"
+
+# The girders' pure rules, also added to the game as `game::kinetics_girder`; its tests are their own target.
+[[test]]
+name = "girder"
+path = "mixins/kinetics/girder.rs"
+
+# The rotation speed controller's pure rules, also added to the game as `game::kinetics_speed_controller`.
+[[test]]
+name = "speed_controller"
+path = "mixins/kinetics/speed_controller.rs"
+
+# The chain drive and chain gearshift's rules: also the module the bundle adds to the game as `game::kinetics_chain`.
+[[test]]
+name = "chain"
+path = "mixins/kinetics/chain.rs"

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": ["minecraft:stick", "kinetics:shaft", "minecraft:andesite"],
+  "result": { "count": 4, "id": "kinetics:wooden_bracket" }
+}
