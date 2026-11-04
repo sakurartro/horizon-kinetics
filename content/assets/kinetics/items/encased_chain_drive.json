@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "kinetics:block/andesite_encased_shaft_block"
+    "model": "kinetics:block/chain_drive_block"
   }
 }
