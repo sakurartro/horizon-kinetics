@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "kinetics:shaft",
+    "minecraft:redstone_block"
+  ],
+  "result": {
+    "id": "kinetics:source",
+    "count": 1
+  }
+}

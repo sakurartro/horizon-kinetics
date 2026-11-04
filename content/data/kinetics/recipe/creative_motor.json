@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "kinetics:source",
+    "minecraft:gold_ingot"
+  ],
+  "result": {
+    "id": "kinetics:creative_motor",
+    "count": 1
+  }
+}
