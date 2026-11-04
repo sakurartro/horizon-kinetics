@@ -43,7 +43,7 @@ pub const SOURCE_SPEED: f32 = 16.0;
 pub const SPEED_KEY: &str = "speed";
 /// The creative motor's saved setting, in RPM (signed; absent: 16).
 pub const RPM_KEY: &str = "rpm";
-// shortcut: a network larger than this is solved only up to the cap, raise it if real builds hit it.
+// A network larger than this stands still (speed 0 everywhere) instead of being solved in part; raise it if real builds hit it.
 pub const MAX_NODES: usize = 4096;
 
 pub type Pos = [i32; 3];
@@ -513,6 +513,7 @@ pub fn solve_groups(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> (Hash
                     }
                 }
             }
+            let capped = nodes.len() >= MAX_NODES && i < nodes.len();
             // Spread the sources' speed.
             let mut speed: HashMap<Vertex, f32> = HashMap::new();
             let mut queue: VecDeque<Vertex> = VecDeque::new();
@@ -522,7 +523,7 @@ pub fn solve_groups(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> (Hash
                     queue.push_back(v);
                 }
             }
-            let mut locked = false;
+            let mut locked = capped;
             while let Some(v) = queue.pop_front() {
                 let n = get(v.0).expect("queued node exists");
                 let sv = speed[&v];
@@ -780,6 +781,20 @@ mod tests {
         assert_eq!(powered_shaft_node(Some("w"), 5), None);
         assert_eq!(kind_of("kinetics:powered_shaft"), Some(PoweredShaft { rpm: 0 }));
         assert!(has_block_entity("kinetics:powered_shaft"));
+    }
+
+    #[test]
+    fn a_network_past_the_cap_stands_still() {
+        let line = |len: i32| {
+            move |p: Pos| {
+                (p[1] == 0 && p[2] == 0 && (0..len).contains(&p[0]))
+                    .then_some(Node { kind: if p[0] == 0 { Source } else { Shaft }, axis: X, shafts: [true; 2] })
+            }
+        };
+        let ok = solve(&[[0, 0, 0]], line(MAX_NODES as i32 - 1));
+        assert_eq!(ok[&[5, 0, 0]], 16.0);
+        let big = solve(&[[0, 0, 0]], line(MAX_NODES as i32 + 10));
+        assert_eq!(big[&[5, 0, 0]], 0.0);
     }
 
     #[test]
