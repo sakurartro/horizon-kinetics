@@ -863,6 +863,17 @@ bindings = [
   { name = "entity", ty = "&mut ModBlockEntity", value = "&mut *entity" },
 ]
 
+# The wheels' block entities ask to tick (else the tick below never runs and the wheel never sees the water).
+[[injection]]
+id = "water-wheel-ticks"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_ticks"
+helper = "water_wheel_ticks.rs"
+bindings = [
+  { name = "block", ty = "&str", value = "block" },
+  { name = "ticks", ty = "&mut bool", value = "&mut *ticks" },
+]
+
 # A large wheel placed or gone, a structure block gone: queued for the end of the tick.
 [[injection]]
 id = "water-wheel-changed"
