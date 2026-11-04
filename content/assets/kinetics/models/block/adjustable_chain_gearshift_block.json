@@ -1,7 +1,8 @@
 {
-  "parent": "kinetics:block/andesite_encased_shaft_block",
-  "textures": {
-    "casing": "minecraft:block/dark_oak_planks",
-    "particle": "minecraft:block/dark_oak_planks"
-  }
+ "parent": "kinetics:block/chain_drive_block",
+ "textures": {
+  "casing": "minecraft:block/dark_oak_planks",
+  "particle": "minecraft:block/dark_oak_planks",
+  "end": "minecraft:block/polished_andesite"
+ }
 }
