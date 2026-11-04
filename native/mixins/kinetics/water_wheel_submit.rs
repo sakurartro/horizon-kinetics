@@ -41,6 +41,12 @@ fn kinetics_water_wheel_submit(
         draw.pop();
     }
     draw.push();
+    if large {
+        // The large models are built at half size to fit the baker's -16..32 bounds: doubled here, about the centre.
+        draw.translate(centre);
+        draw.scale([2.0; 3]);
+        draw.translate([-0.5; 3]);
+    }
     draw.rotate_about(k::axis_vector(axis), k::angle(speed, ticks), centre);
     if let Some((turn, degrees)) = k::lay_along(axis) {
         draw.rotate_about(turn, degrees, centre);
