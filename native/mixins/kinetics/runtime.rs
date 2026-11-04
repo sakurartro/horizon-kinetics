@@ -527,15 +527,25 @@ pub fn solve_groups(changed: &[Pos], get: impl Fn(Pos) -> Option<Node>) -> (Hash
             while let Some(v) = queue.pop_front() {
                 let n = get(v.0).expect("queued node exists");
                 let sv = speed[&v];
-                // The controller link is one way from whichever side is reached first: it only fills a side
-                // that has no speed yet (a second source on the other side isn't checked).
-                if let Some(q) = controller_partner(v.0, n, &get).map(|q| (q, 0)).filter(|q| seen.contains(q) && !speed.contains_key(q)) {
+                // The controller link hands a speed from one side to the other: it fills a side that has no speed
+                // yet, and a side with one (a second source) must agree with it either way round, else the network locks.
+                if let Some(q) = controller_partner(v.0, n, &get).map(|q| (q, 0)).filter(|q| seen.contains(q)) {
                     let target = match (n.kind, get(q.0).map(|m| m.kind)) {
                         (Kind::Controller { rpm }, _) | (_, Some(Kind::Controller { rpm })) => i32::from(rpm),
                         _ => 0,
                     };
-                    speed.insert(q, conveyed(target, sv));
-                    queue.push_back(q);
+                    match speed.get(&q) {
+                        None => {
+                            speed.insert(q, conveyed(target, sv));
+                            queue.push_back(q);
+                        }
+                        Some(&other) => {
+                            let agrees = |a: f32, b: f32| (a - b).abs() <= 1e-4 * b.abs().max(1.0);
+                            if !agrees(conveyed(target, sv), other) && !agrees(conveyed(target, other), sv) {
+                                locked = true;
+                            }
+                        }
+                    }
                 }
                 for (q, f) in links(v, n, &get) {
                     if !seen.contains(&q) {
@@ -1162,6 +1172,24 @@ mod tests {
         assert_eq!(solve(&[[0, 0, 0]], world(&w))[&[1, 1, 0]], 0.0);
         let w = [([0, 0, 0], Source, X), ([1, 0, 0], c(64), X), ([1, 1, 0], LargeCog, X)];
         assert_eq!(solve(&[[0, 0, 0]], world(&w))[&[1, 1, 0]], 0.0);
+    }
+
+    #[test]
+    fn sources_on_both_sides_of_a_controller_must_agree() {
+        // Shaft side 16 -> target 64 on the cogwheel; a motor on the cogwheel side agrees at 64 and locks at 48.
+        let net = |rpm: i16| {
+            let nd = |kind, axis| Node { kind, axis, shafts: [true; 2] };
+            let motor = Node { kind: Motor { toward: 1, rpm }, axis: Z, shafts: [false, true] };
+            let w = [
+                ([0, 0, 0], nd(Source, X)),
+                ([1, 0, 0], nd(Controller { rpm: 64 }, X)),
+                ([1, 1, 0], nd(LargeCog, Z)),
+                ([1, 1, -1], motor),
+            ];
+            solve(&[[0, 0, 0]], |p| w.iter().find(|b| b.0 == p).map(|b| b.1))
+        };
+        assert_eq!(net(64)[&[1, 1, 0]], 64.0);
+        assert_eq!(net(48)[&[1, 1, 0]], 0.0);
     }
 
     #[test]
