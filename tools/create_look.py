@@ -1,16 +1,30 @@
 #!/usr/bin/env python3
-"""Builds a resource pack with Create's shaft, cogwheel and andesite casing models, from a Create jar you downloaded yourself.
+"""Builds local-only Create-look files from a Create jar you downloaded yourself.
 
     python3 tools/create_look.py ~/Downloads/create-1.21.1-6.0.10.jar
 
-Create exists for Minecraft 1.21.1 (NeoForge) at most; its block models and PNG textures still load in 26.3.
-The pack holds Create's own models (create:block/shaft, cogwheel, large_cogwheel) and only the textures they use.
-Horizon lays a mod's files over a resource pack's, so the pack can't replace Kinetics' models: the Kinetics
-native mod draws Create's models when they exist and its own otherwise.
-Create's assets are All Rights Reserved: the pack is for your own game, never share or commit it.
-Default output: the Horizon game folder's resourcepacks/kinetics-create-look.zip.
+Create's 1.21.1 (NeoForge) block and item models and their referenced textures still load in Horizon 26.3.
+The resource pack is for the native in-world renderer. A private local .hmod copy points Kinetics item
+definitions at Create's item models, so they also show in inventory and creative menus. Horizon layers
+content mods after resource packs, so a resource-pack-only item override cannot replace Kinetics' definitions.
+If a Create item model needs an unsupported NeoForge loader, the local .hmod keeps Kinetics' existing icon.
+Create's assets are All Rights Reserved: both outputs are for your own game; never share or commit them.
+Default outputs: resourcepacks/kinetics-create-look.zip and kinetics-create-look.hmod in the Horizon game folder.
 """
-import argparse, json, pathlib, re, sys, zipfile
+import argparse, json, os, pathlib, re, sys, zipfile
+
+
+def game_home():
+    """The Horizon game folder, as the launcher finds it: HORIZON_HOME, else `horizon` in the platform's data folder."""
+    if os.environ.get("HORIZON_HOME"):
+        return pathlib.Path(os.environ["HORIZON_HOME"])
+    if sys.platform == "win32":
+        base = pathlib.Path(os.environ.get("APPDATA") or pathlib.Path.home() / "AppData/Roaming")
+    elif sys.platform == "darwin":
+        base = pathlib.Path.home() / "Library/Application Support"
+    else:
+        base = pathlib.Path(os.environ.get("XDG_DATA_HOME") or pathlib.Path.home() / ".local/share")
+    return base / "horizon"
 
 # Create models the Kinetics mod draws first (runtime.rs LOOK_MODELS), all built along the y axis but shaft_half (casing.rs, clutch.rs), along z.
 MODELS = ["shaft", "cogwheel", "large_cogwheel"]
@@ -46,11 +60,82 @@ def ref(name):
     return (ns or "minecraft"), path
 
 
+def local_manifest(source):
+    """Add Create's asset namespace to a private Kinetics content-mod copy."""
+    text = (source / "horizon-mod.toml").read_text()
+    match = re.search(r"(?m)^namespaces\s*=\s*\[(.*?)\]\s*$", text)
+    namespaces = set(re.findall(r'"([a-z0-9_.-]+)"', match.group(1))) if match else set()
+    if match and "create" in namespaces:
+        return text
+    namespaces.add("create")
+    encoded = "namespaces = " + json.dumps(sorted(namespaces))
+    if match:
+        return text[:match.start()] + encoded + text[match.end():]
+    return text.rstrip() + "\n" + encoded + "\n"
+
+
+def item_names(source):
+    """Kinetics' explicit items plus blocks which create an item by default."""
+    names = {p.stem for p in (source / "assets/kinetics/items").glob("*.json")}
+    blocks = source / "data/kinetics/horizon/block"
+    if blocks.is_dir():
+        for path in blocks.glob("*.json"):
+            block = json.loads(path.read_bytes())
+            if block.get("item", True) is not False:
+                names.add(path.stem)
+    return names
+
+
+def build_local_mod(source, out, extracted_assets, create_items):
+    """Write a private .hmod copy with its item definitions pointed at Create models."""
+    if not (source / "horizon-mod.toml").is_file():
+        sys.exit(f"{source}: no horizon-mod.toml (expected the Kinetics content-mod folder)")
+
+    entries = {}
+    for folder in ("assets", "data"):
+        root = source / folder
+        if root.is_dir():
+            for path in root.rglob("*"):
+                if path.is_file():
+                    entries[path.relative_to(source).as_posix()] = path.read_bytes()
+
+    # Horizon 26.3 does not recognize this vanilla component yet. It is only
+    # excluded from the private local copy so the rest of Kinetics can load.
+    goggles = "data/kinetics/horizon/item/goggles.json"
+    if goggles in entries:
+        item = json.loads(entries[goggles])
+        item.get("components", {}).pop("!minecraft:dyed_color", None)
+        entries[goggles] = (json.dumps(item, indent=2) + "\n").encode()
+
+    replaced = []
+    for item_model in sorted(create_items):
+        rel = f"assets/kinetics/items/{item_model}.json"
+        item = json.loads(entries[rel]) if rel in entries else {
+            "model": {"type": "minecraft:model", "model": f"create:item/{item_model}"}
+        }
+        item.setdefault("model", {})["model"] = f"create:item/{item_model}"
+        entries[rel] = (json.dumps(item, indent=2) + "\n").encode()
+        replaced.append(item_model)
+
+    entries.update(extracted_assets)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("horizon-mod.toml", local_manifest(source).encode())
+        for path in sorted(entries):
+            z.writestr(path, entries[path])
+    return replaced
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("jar", type=pathlib.Path, help="create-1.21.1-*.jar")
     ap.add_argument("--out", type=pathlib.Path,
-                    default=pathlib.Path.home() / ".local/share/horizon/resourcepacks/kinetics-create-look.zip")
+                    default=game_home() / "resourcepacks/kinetics-create-look.zip")
+    ap.add_argument("--content", type=pathlib.Path, default=pathlib.Path(__file__).resolve().parents[1] / "content",
+                    help="Kinetics content-mod source folder (default: ../content beside this script)")
+    ap.add_argument("--mod-out", type=pathlib.Path,
+                    default=game_home() / "kinetics-create-look.hmod",
+                    help="private local .hmod output (default: Horizon game folder, outside horizon-mods)")
     a = ap.parse_args()
 
     try:
@@ -65,26 +150,33 @@ def main():
         print(f"warning: {a.jar.name} doesn't say 1.21.1; other versions' models may differ", file=sys.stderr)
 
     files = {}  # path in the pack -> bytes
+    unsupported_models = set()
 
     def model(name):
         ns, path = ref(name)
         if ns != "create":
-            return  # vanilla's own (block/block): the game has it
+            return True  # vanilla's own (block/block): the game has it
         entry = f"assets/create/models/{path}.json"
         if entry in files:
-            return
+            return entry not in unsupported_models
         if entry not in names:
             sys.exit(f"{a.jar.name} has no {entry}: another Create version?")
         data = jar.read(entry)
         files[entry] = data
         m = json.loads(data)
+        supported = True
         if "loader" in m:
             print(f"warning: {entry} uses NeoForge loader {m['loader']!r}, which Horizon may not draw", file=sys.stderr)
+            unsupported_models.add(entry)
+            supported = False
         for tex in m.get("textures", {}).values():
             if isinstance(tex, str) and not tex.startswith("#"):
                 texture(tex)
         if "parent" in m:
-            model(m["parent"])
+            supported = model(m["parent"]) and supported
+        if not supported:
+            unsupported_models.add(entry)
+        return supported
 
     def texture(name):
         ns, path = ref(name)
@@ -97,9 +189,22 @@ def main():
         if f"assets/create/textures/{path}.png" not in names:
             print(f"warning: {a.jar.name} has no texture {name}", file=sys.stderr)
 
-    MODELS.extend(["creative_motor/block", "creative_motor/block_vertical"])  # motor.rs LOOK_MODELS (its shaft_half is the casing's)
-    for name in MODELS:
+    all_models = MODELS + ["creative_motor/block", "creative_motor/block_vertical"]
+    for name in all_models:
         model(f"create:block/{name}")
+    items = item_names(a.content)
+    if not (a.content / "assets/kinetics/items").is_dir():
+        sys.exit(f"{a.content}: missing Kinetics item definitions; pass --content with the content-mod folder")
+    create_items = []
+    for item_name in sorted(items):
+        item_model = f"item/{item_name}"
+        if f"assets/create/models/{item_model}.json" not in names:
+            print(f"warning: no Create item model for kinetics:{item_name}; keeping its Kinetics icon", file=sys.stderr)
+            continue
+        if not model(f"create:{item_model}"):
+            print(f"warning: Create item model for kinetics:{item_name} uses an unsupported loader; keeping its Kinetics icon", file=sys.stderr)
+            continue
+        create_items.append(item_name)
     files["pack.mcmeta"] = json.dumps({"pack": {
         "description": "Kinetics with Create's look (from your own Create jar; don't share)",
         "min_format": PACK_FORMAT, "max_format": PACK_FORMAT}}, indent=2).encode()
@@ -108,7 +213,15 @@ def main():
     with zipfile.ZipFile(a.out, "w", zipfile.ZIP_DEFLATED) as z:
         for path in sorted(files):
             z.writestr(path, files[path])
-    print(f"{a.out}: {len(files)} files. Turn it on in Options > Resource Packs.")
+    replaced = build_local_mod(
+        a.content,
+        a.mod_out,
+        {p: b for p, b in files.items() if p.startswith("assets/")},
+        create_items,
+    )
+    print(f"{a.out}: {len(files)} files. Turn it on in Options > Resource Packs for the world look.")
+    print(f"{a.mod_out}: local-only Kinetics .hmod; Create item models: {', '.join(replaced)}")
+    print("Use this .hmod instead of the regular Kinetics content .hmod; keep the Kinetics .hnmod installed.")
 
 
 if __name__ == "__main__":
