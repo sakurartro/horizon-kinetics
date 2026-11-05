@@ -1,99 +1,70 @@
-# Kinetics — валы и шестерни для Horizon
+# Kinetics for Horizon
 
-Базовая кинетика по мотивам Create: источник вращения, валы, шестерни и большие шестерни,
-которые крутятся в правильные стороны. Плюс корпуса, коробки передач, моторы, водяные колёса, нагрузка (stress) и приборы; без лент и контрапций.
+Alpha. An unofficial mod for [Horizon](https://github.com/horizon-rust/horizon) (a Minecraft 26.3 client in Rust) that ports the **kinetic core of Create**: rotation you can build with, and nothing else.
 
-## Что внутри
+Not affiliated with the Create team.
 
-| Папка | Что это |
-|---|---|
-| `content/` | Content-мод (`.hmod`): блоки `kinetics:source`, `shaft`, `cogwheel`, `large_cogwheel`, их модели, предметы, лут, вкладка креатива |
-| `native/mixins/kinetics/` | Native-бандл (horizon-mixins): block entity со скоростью, пересчёт сети, отрисовка вращения |
-| `native/mixins/kinetics/runtime.rs` | Логика сети без типов игры; она же библиотека crate'а `native/` с тестами |
+## Scope
 
-Правила (как в Create):
-- вал передаёт скорость вдоль своей оси, шестерни тоже проходят валом по своей оси;
-- две малые шестерни рядом (одна ось, соседние по грани) — противоположное направление;
-- большая ↔ малая (по диагонали вокруг оси) — ×2 / ×½ с разворотом;
-- две большие с перпендикулярными осями — зацепляются;
-- конфликт (две силы тянут в разные стороны) — вся сеть стоит (в Create блок ломается);
-- источник даёт фиксированные 16 об/мин;
-- сцепление (`clutch`) и переключатель передач (`gearshift`) — вал из двух половин: без сигнала редстоуна передают вращение дальше, с сигналом сцепление отключает половину дальше от источника, переключатель разворачивает её. Как в Create, сеть на тик отрывается при смене сигнала. Нужен андезитовый корпус (рецепты: корпус + вал/шестерня + редстоун). Сеть считается по половинам (`solve_halves`), логика сигнала — `native/mixins/kinetics/clutch.rs`.
-- коробка передач (`kinetics:gearbox`, как в Create): валы выходят из четырёх граней, кроме оси блока. Напротив входа
-  вращение разворачивается, на перпендикулярной оси — разворачивается у одной из двух граней (`getAxisModifier`).
-  Валы внутри рисует блок-сущность. Ставится осью вверх; `vertical_gearbox` кладёт её на бок (ось по взгляду
-  игрока или поперёк валов соседей). У Create это отдельный предмет, здесь — отдельный блок, который в конце тика
-  превращается в `gearbox`. Выпадает `gearbox` (ось вверх) или `vertical_gearbox`.
-- водяные колёса (`kinetics:water_wheel` 8 об/мин, `kinetics:large_water_wheel` 4 об/мин + невидимые `kinetics:water_wheel_structure`): раз в 10 тиков колесо читает воду (и лаву, и пузырьковые колонны) вокруг по формулам Create (`FlowingFluid.getFlow`, знак вращения по направлению течения). Большое колесо занимает 3x3 и не ставится без места, ломается вместе с телом. Доски в руке меняют дерево (ваниль, 12 видов). Модели у Create в OBJ, игра их не рисует: колёса нарисованы кубоидами, рамка малого колеса берётся из пакета `tools/create_look.py`. Рецепты: 8 досок + вал; 8 досок + колесо. Нагрузки (стресса) в моде пока нет.
-- рукоять (`kinetics:hand_crank`, 32 об/мин): блок на грани, вал идёт в стену. ПКМ крутит сеть, пока кнопка зажата (клик повторяется), через 10 тиков после последнего клика она останавливается; Shift+ПКМ с пустыми руками крутит в другую сторону; каждый поворот тратит голод (0,32). Рецепт: 3 доски + андезит (у Create андезитовый сплав, его в моде пока нет). Скорость хранится в памяти, не в мире.
-- творческий мотор (`kinetics:creative_motor`) направлен валом в одну сторону (`facing`, ставится валом к соседнему валу, иначе к игроку, Shift - от игрока), даёт -256..256 об/мин: колесо мыши над боковой гранью меняет скорость (шаг 1, с Shift - 16), ПКМ пустыми руками разворачивает вращение, значение (`16 RPM ⟲`) видно под прицелом.
-- андезитовый корпус (`kinetics:andesite_casing`): ПКМ им по валу или шестерне (без Shift) превращает их в
-  `andesite_encased_shaft` / `andesite_encased_cogwheel` / `andesite_encased_large_cogwheel` с той же осью. Корпус
-  при этом не тратится (как в Create); сломанный блок в корпусе роняет голый вал или шестерню. У шестерни в корпусе
-  есть `top_shaft` и `bottom_shaft`: вал торчит из торца и передаёт вращение вдоль оси только там, где он есть
-  (при установке корпуса вал появляется с тех торцов, у которых сосед по оси смотрит на шестерню своим валом).
-  Зацепление шестерён в корпусе то же, что у голых.
-- латунный корпус (`kinetics:brass_casing`): то же, что андезитовый, с `brass_encased_shaft` / `brass_encased_cogwheel` / `brass_encased_large_cogwheel`. Рецепта нет (латуни в моде пока нет).
-- медный корпус (`kinetics:copper_casing`): обычный декоративный блок, как в Create без вариантов с валами; только в творческой вкладке, без рецепта.
-- гаечный ключ `kinetics:wrench` (золото ×3, шестерня, палка): ПКМ по блоку поворачивает его ось на четверть оборота
-  вокруг нажатой грани, Shift+ПКМ забирает блок в инвентарь (в креативе без предмета). Текстура предмета своя, нарисована
-  скриптом; вида Create у предмета нет (пак подменяет только вращающиеся части).
-- очки инженера `kinetics:goggles` (шлем: ПКМ надевает): пока они на голове, под прицелом на кинетическом блоке (до 5 блоков) видна его скорость в об/мин. Нагрузка показывается тоже (см. `stress.rs`). Текстура своя, нарисована скриптом; на голове модель не рисуется. Логика — `native/mixins/kinetics/goggles.rs`.
-- помощник размещения вала (как `PlacementHelpers` в Create): вал в руке, прицел на вал — рамка с призрачным валом в первой свободной клетке по его оси (дальше ряда валов, до 12) и стрелка у прицела; ПКМ ставит вал туда. Логика — `native/mixins/kinetics/assist.rs`, рисунок — `assist_hud.rs`, клик — `assist_use.rs`. Рисуется поверх экрана без проверки глубины, без сглаживания между тиками.
-- помощник размещения шестерёнок (`CogwheelBlockItem` в Create): малая или большая шестерёнка в руке, прицел на шестерёнку (не на её вал) — призрачная коробка и стрелка в клетке сцепления: малая у малой — рядом на той же оси; большая у большой — по диагонали с осью по направлению шага; разные размеры — по диагонали на той же оси. ПКМ ставит шестерёнку с этой осью. Та же логика в `assist.rs`, рисунок и клик — в `assist_hud.rs`/`assist_use.rs`. Не перенесены «встроенные» помощники Create для обшитых шестерёнок в руке.
-- скобы (`kinetics:wooden_bracket`, `metal_bracket`, как в Create): ПКМ скобой по валу или шестерне (грань не вдоль оси) надевает скобу вокруг него; вращение не меняется. Скоба хранится в block entity вала (число `bracket` = материал и грань), рисуется с поворотами из генератора Create. Другая скоба заменяет прежнюю и возвращает её; Shift+ПКМ ключом снимает. Рецепт: палка/железный самородок + вал + андезит → 4 (у Create андезитовый сплав). Логика — `native/mixins/kinetics/bracket.rs`. Не выпадает при поломке вала.
-- `kinetics:powered_shaft` (как `PoweredShaftBlock`): вал, который сам источник; скорость (об/мин, со знаком по оси, 0 - просто вал) лежит в ключе `rpm` его блок-сущности. Двигателей пока нет, поэтому скорость задают данными (`/data`), в выживании не добывается, выпадает `shaft`.
+This is the rotation core, not the whole of Create. Included: shafts, cogwheels, casings, gearboxes, clutch and gearshift, chain drives, brackets, girders, water wheels, hand crank, creative motor, stress, gauges, wrench and goggles. Not included: belts, fluids, contraptions, trains, crafting machines, the rest of Create's content. Those need systems Horizon's mod API doesn't have yet, and the core had to work first.
 
-- цепная передача (`kinetics:encased_chain_drive`, корпус + 3 железных самородка) и регулируемая цепная передача (`kinetics:adjustable_chain_gearshift`, передача + редстоун; у Create вместо редстоуна электронная трубка). Соседние передачи рядом (оси не обязаны совпадать) сцепляются цепью (`part` = `start`/`middle`/`end`, `axis_along_first`, как `ChainDriveBlock.updateShape`; пересчитывается в конце тика) и передают скорость в ту же сторону; вдоль оси передают вал-вал. Регулируемая умножает скорость на `1 + (сигнал+1)/16` (сигнал 1..15, 0 = ×1), сигнал хранится в блок-сущности. В отличие от Create сеть не обрывается на тик при смене сигнала. Логика — `native/mixins/kinetics/chain.rs`, тесты `native/tests/chain_drive.rs`.
+Rotation rules follow Create: speed travels along shafts, meshing cogwheels reverse direction, large↔small gives ×2/×½, a conflict stops the network.
 
-- регулятор скорости (`kinetics:rotation_speed_controller`, как в Create): вал по горизонтальной оси, под большой шестерёнкой с другой горизонтальной осью. Передаёт вращение между валом и шестерёнкой, задавая цель -256..256 об/мин (по умолчанию 16; колесо мыши над боковой гранью, как у творческого мотора; шестерёнка не медленнее входа того же направления). Цель хранится в `rpm`, логика — `speed_controller.rs`, связь в решателе — `runtime.rs` (`controller_partner`, `conveyed`). Рецепт — свой (корпус + вал + редстоун).
+## Requirements
 
-- нагрузка (stress, `stress.rs`), спидометр и стрессометр (`kinetics:speedometer`, `kinetics:stressometer`), маховик (`kinetics:flywheel`), часы с кукушкой (`kinetics:cuckoo_clock`, `mysterious_cuckoo_clock`): правила в одноимённых файлах `native/mixins/kinetics/`, тесты в `native/tests/stress.rs` и своих целях `cargo test`.
+- Horizon with its launcher, on **Minecraft 26.3**.
+- The native part is pinned to Horizon commit `c5c8a33` (hook points API 153, needs 129 and 151). Older Nightlies, such as 2026-11-01 (API 80), won't work. If your Horizon differs, the launcher asks before building ("Build anyway").
+- Rust is not needed to play; the launcher builds the game for you. The first build takes 20–30 minutes.
+- **Alpha:** most of it has only been tested by unit tests and CI builds, not in the game. Expect bugs.
 
-- металлическая балка (`kinetics:metal_girder`, рецепт: 3 железных слитка + 3 андезита → 8) и балка с валом (`kinetics:metal_girder_encased_shaft`): балка ставится вдоль оси нажатой грани, стороны `beam` (x, z, xz), `top` и `bottom` подстраиваются под соседей в конце тика (балки, вал в балке, стена, фонарь, цепь, твёрдый блок; правила `native/mixins/kinetics/girder.rs`). ПКМ валом по балке продевает вал: блок передаёт вращение вдоль оси вала (в Create `horizontal_axis`, здесь `axis`: x или z). Ломается в балку и вал. Ключ не превращает балку с валом обратно; без затопления водой у балки с валом.
+## Install the mod
 
-Сеть пересчитывается целиком при изменении любого её блока, в конце тика уровня.
+The mod has two files: `kinetics.hmod` (blocks, models, recipes) and `kinetics-0.1.0.hnmod` (the Rust code that makes things turn). You need both.
 
-## Сборка и тесты
+1. Build them (or take them from Releases, if there is one):
+   ```sh
+   cd content && cargo horizon-mod build   # -> content/target/horizon-mod/kinetics.hmod
+   python3 native/package.py               # -> native/target/kinetics-0.1.0.hnmod
+   ```
+2. Copy them into your Horizon game folder (Linux: `~/.local/share/horizon/`):
+   - `kinetics.hmod` → `horizon-mods/`
+   - `kinetics-0.1.0.hnmod` → `horizon-native-mods/`
+3. In the launcher, turn **Native mods** on and press **Build**. Native mods run with full access to your computer, so read the source first.
+4. Start the game. Kinetics has its own creative tab.
+
+## Create-style look (optional resource pack)
+
+By default Kinetics uses plain vanilla textures. Create's models and textures are All Rights Reserved, so they are not in this repo or the mod. To get the Create look **for your own game**, build it from your own copy of Create:
+
+1. Download the **Create 1.21.1 NeoForge** jar from [Modrinth](https://modrinth.com/mod/create/versions?g=1.21.1&l=neoforge).
+2. Run (Python 3):
+   ```sh
+   python3 tools/create_look.py ~/Downloads/create-1.21.1-<version>.jar
+   ```
+   Options: `--out` (zip path), `--mod-out` (hmod path), `--content` (content folder).
+3. It writes two files into the game folder:
+   - `resourcepacks/kinetics-create-look.zip`: Create models for blocks in the world.
+   - `kinetics-create-look.hmod`: a personal copy of the mod that also fixes inventory and creative-tab icons.
+4. Use it:
+   - World look only: enable the zip in **Resource Packs**.
+   - World and icons: put `kinetics-create-look.hmod` in `horizon-mods/` instead of `kinetics.hmod` (only one mod with id `kinetics`). Keep the `.hnmod`. You don't need the zip then.
+5. To go back: disable the pack and restore the normal `kinetics.hmod`.
+
+**Never upload, release or commit the generated files**: they contain Create's assets.
+
+## Development
 
 ```sh
-cd native && cargo test               # логика сети
-cd content && cargo horizon-mod build # target/horizon-mod/kinetics.hmod
+cd native && cargo test   # rotation logic and rules
 ```
 
-Native-бандл закреплён на коммите Horizon `c5c8a33` (hook points API 153): ему нужны block entity
-на любом шаблоне (API 129) и отдельные модели (API 151), которых нет в Nightly 2026-11-01 (API 80).
-Лаунчер сам скачает исходники этого коммита и соберёт игру.
+| Path | What |
+|---|---|
+| `content/` | Content mod: blocks, models, items, loot, recipes |
+| `native/mixins/kinetics/` | Native bundle: block entities, network solver (`runtime.rs`), rendering |
+| `native/tests/` | Tests for the rules |
+| `tools/create_look.py` | Local Create-look builder |
 
-## Текстуры
+## License
 
-Только ванильные текстуры 26.3 (андезит, полированный андезит, обтёсанный дуб/ель, доски, блок редстоуна):
-мод их не содержит, ссылается по имени. Ассетов Create здесь нет (они All Rights Reserved).
-
-### Вид Create (для себя)
-
-Модели и текстуры Create можно взять из своей копии Create: скрипт соберёт из jar ресурспак,
-который подменяет модели вала и шестерён Kinetics на модели Create.
-
-1. Скачай Create для **1.21.1, NeoForge** (новее Create не выходил; модели и PNG оттуда работают в 26.3):
-   https://modrinth.com/mod/create/versions?g=1.21.1&l=neoforge — файл `create-1.21.1-<версия>.jar`.
-2. Собери ресурспак (нужен Python 3):
-   ```sh
-   python3 tools/create_look.py ~/Downloads/create-1.21.1-6.0.10.jar
-   ```
-   Он ляжет в `~/.local/share/horizon/resourcepacks/kinetics-create-look.zip`.
-   Другая папка игры: `--out путь/kinetics-create-look.zip` (папка `resourcepacks/` рядом с `options.txt`).
-3. В игре: Options → Resource Packs → перенеси **kinetics-create-look** в активные (выше модов).
-
-Скрипт берёт из jar только модели `shaft`, `cogwheel`, `large_cogwheel`, андезитового и латунного (и медного) корпуса, цепных передач, скоб и деталей в них
-и текстуры, на которые они ссылаются. Корпус в мире рисует блок-сущность: модель Create чуть крупнее блока поверх
-нашей заглушки (ванильные доски ели и полированный андезит). Horizon кладёт файлы мода поверх ресурспака (в Java наоборот), поэтому пак не может заменить
-модели Kinetics: мод сам рисует модели Create, если пак включён, и свои, если нет. Вид Create
-получают только вращающиеся части в мире; предметы в инвентаре остаются с моими текстурами. Пак собран из ассетов Create (All Rights Reserved): он только для твоей игры —
-не выкладывай его, не прикладывай к релизам и не коммить.
-Чтобы вернуть обычный вид, выключи пак в Resource Packs.
-
-## Лицензия
-
-Код — MIT (`LICENSE`). Правила вращения портированы из Create (MIT, Copyright (c) The Create Team /
-The Creators of Create), уведомление — в `native/mixins/kinetics/runtime.rs`.
+Code: MIT (`LICENSE`). Rotation rules are ported from Create (MIT, Copyright (c) The Create Team / The Creators of Create); the notice is in `native/mixins/kinetics/runtime.rs`. No Create assets are included.
