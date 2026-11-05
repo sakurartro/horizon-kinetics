@@ -1,6 +1,6 @@
 # Kinetics for Horizon
 
-Alpha. An unofficial mod for [Horizon](https://github.com/horizon-rust/horizon) (a Minecraft 26.3 client in Rust) that ports the **kinetic core of Create**: rotation you can build with, and nothing else.
+PRE PRE Alpha(Very raw). An unofficial mod for [Horizon](https://github.com/horizon-rust/horizon) (a Minecraft 26.3 client in Rust) that ports the **kinetic core of Create**: rotation you can build with, and nothing else.
 
 Not affiliated with the Create team.
 
@@ -15,7 +15,7 @@ Rotation rules follow Create: speed travels along shafts, meshing cogwheels reve
 - Horizon with its launcher, on **Minecraft 26.3**.
 - The native part is pinned to Horizon commit `c5c8a33` (hook points API 153, needs 129 and 151). Older Nightlies, such as 2026-11-01 (API 80), won't work. If your Horizon differs, the launcher asks before building ("Build anyway").
 - Rust is not needed to play; the launcher builds the game for you. The first build takes 20–30 minutes.
-- **Alpha:** most of it has only been tested by unit tests and CI builds, not in the game. Expect bugs.
+- **Alpha:** A LOT OF BUGS
 
 ## Install the mod
 
