@@ -32,6 +32,14 @@ The mod has two files: `kinetics.hmod` (blocks, models, recipes) and `kinetics-0
    cp content/target/horizon-mod/kinetics.hmod ~/.local/share/horizon/horizon-mods/kinetics.hmod
    cp native/target/kinetics-0.1.0.hnmod ~/.local/share/horizon/horizon-native-mods/kinetics-0.1.0.hnmod
    ```
+   Other systems (**UNTESTED**, paths taken from the launcher/tool code, not from running it; same file names, same two subfolders):
+
+   | OS | Game folder |
+   |---|---|
+   | Windows | `%APPDATA%\horizon\` (copy to `horizon-mods\` and `horizon-native-mods\`) |
+   | macOS | `~/Library/Application Support/horizon/` |
+
+   Building the files on Windows/macOS is also untested; use `python` instead of `python3` on Windows if needed. If your game folder is elsewhere, `HORIZON_HOME` overrides it for `tools/create_look.py`.
 3. In the launcher, press **Build** on the Mods tab (native mods are always on). Native mods run with full access to your computer, so read the source first.
 4. Start the game. Kinetics has its own creative tab.
 
