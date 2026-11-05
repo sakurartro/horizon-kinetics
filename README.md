@@ -6,7 +6,7 @@ Not affiliated with the Create team.
 
 ## Scope
 
-This is the rotation core, not the whole of Create. Included: shafts, cogwheels, casings, gearboxes, clutch and gearshift, chain drives, brackets, girders, water wheels, hand crank, creative motor, stress, gauges, wrench and goggles. Not included: belts, fluids, contraptions, trains, crafting machines, the rest of Create's content. Those need systems Horizon's mod API doesn't have yet, and the core had to work first.
+This is the rotation core, not the whole of Create. Included: shafts, cogwheels, casings, gearboxes, clutch and gearshift, chain drives, brackets, girders, water wheels, hand crank, creative motor, rotation source, rotation speed controller, flywheel, cuckoo clocks, stress, gauges, wrench and goggles. Not included: belts, fluids, contraptions, trains, crafting machines, the rest of Create's content. Those need systems Horizon's mod API doesn't have yet, and the core had to work first.
 
 Rotation rules follow Create: speed travels along shafts, meshing cogwheels reverse direction, large↔small gives ×2/×½, a conflict stops the network.
 
@@ -14,7 +14,8 @@ Rotation rules follow Create: speed travels along shafts, meshing cogwheels reve
 
 - Horizon with its launcher, on **Minecraft 26.3**.
 - The native part is pinned to Horizon commit `c5c8a33` (hook points API 153, needs 129 and 151). Older Nightlies, such as 2026-11-01 (API 80), won't work. If your Horizon differs, the launcher asks before building ("Build anyway").
-- Rust is not needed to play; the launcher builds the game for you. The first build takes 20–30 minutes.
+- Rust is not needed to play; the launcher builds the game for you. The first build takes 20–30 minutes. Building the mod files yourself (below) does need Rust and `cargo-horizon-mod`.
+- **Tested only on Arch Linux** (Omarchy). Other distros, Windows and macOS are untested; the paths below for them come from reading the code, not from running it.
 - **Alpha:** A LOT OF BUGS
 
 ## Install the mod
@@ -31,7 +32,7 @@ The mod has two files: `kinetics.hmod` (blocks, models, recipes) and `kinetics-0
    cp content/target/horizon-mod/kinetics.hmod ~/.local/share/horizon/horizon-mods/kinetics.hmod
    cp native/target/kinetics-0.1.0.hnmod ~/.local/share/horizon/horizon-native-mods/kinetics-0.1.0.hnmod
    ```
-3. In the launcher, turn **Native mods** on and press **Build**. Native mods run with full access to your computer, so read the source first.
+3. In the launcher, press **Build** on the Mods tab (native mods are always on). Native mods run with full access to your computer, so read the source first.
 4. Start the game. Kinetics has its own creative tab.
 
 ## Create-style look (optional resource pack)
