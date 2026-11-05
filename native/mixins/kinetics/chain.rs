@@ -235,6 +235,25 @@ pub fn take(dimension: &str) -> Vec<Pos> {
     out
 }
 
+/// Every static model `static_look` can name, for `kinetics_chain_models` to register (they exist only with the look pack).
+pub const STATIC_LOOK_MODELS: [&str; 15] = [
+    "create:block/encased_chain_drive/single",
+    "create:block/encased_chain_drive/middle_horizontal",
+    "create:block/encased_chain_drive/middle_vertical",
+    "create:block/encased_chain_drive/end_horizontal",
+    "create:block/encased_chain_drive/end_vertical",
+    "create:block/adjustable_chain_gearshift_single",
+    "create:block/adjustable_chain_gearshift_middle_horizontal",
+    "create:block/adjustable_chain_gearshift_middle_vertical",
+    "create:block/adjustable_chain_gearshift_end_horizontal",
+    "create:block/adjustable_chain_gearshift_end_vertical",
+    "create:block/adjustable_chain_gearshift_single_powered",
+    "create:block/adjustable_chain_gearshift_middle_horizontal_powered",
+    "create:block/adjustable_chain_gearshift_middle_vertical_powered",
+    "create:block/adjustable_chain_gearshift_end_horizontal_powered",
+    "create:block/adjustable_chain_gearshift_end_vertical_powered",
+];
+
 /// Create's static models: `encased_chain_drive/<suffix>` for the drive, `adjustable_chain_gearshift_<suffix>` with
 /// `_powered` for the gearshift (they exist only while the look pack is on). With the (x, y) turns of the block state
 /// that `ChainDriveGenerator` gives it, applied x first.
@@ -394,6 +413,18 @@ mod tests {
 
     #[test]
     fn the_look_follows_part_axis_and_power() {
+        for name in [DRIVE, GEARSHIFT] {
+            for axis in 0..3 {
+                for first in [false, true] {
+                    for part in [Part::None, Part::Start, Part::Middle, Part::End] {
+                        for powered in [false, true] {
+                            let (m, ..) = static_look(name, at(axis, first, part), powered).unwrap();
+                            assert!(STATIC_LOOK_MODELS.contains(&m.as_str()), "{m}");
+                        }
+                    }
+                }
+            }
+        }
         let (m, x, y) = static_look(DRIVE, NONE, false).unwrap();
         assert_eq!((m.as_str(), x, y), ("create:block/encased_chain_drive/single", 90, 0));
         let (m, x, y) = static_look(GEARSHIFT, at(2, false, Part::Start), true).unwrap();
