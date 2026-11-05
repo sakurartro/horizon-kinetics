@@ -26,9 +26,11 @@ The mod has two files: `kinetics.hmod` (blocks, models, recipes) and `kinetics-0
    cd content && cargo horizon-mod build   # -> content/target/horizon-mod/kinetics.hmod
    python3 native/package.py               # -> native/target/kinetics-0.1.0.hnmod
    ```
-2. Copy them into your Horizon game folder (Linux: `~/.local/share/horizon/`):
-   - `kinetics.hmod` → `horizon-mods/`
-   - `kinetics-0.1.0.hnmod` → `horizon-native-mods/`
+2. Copy them into your Horizon game folder. On Linux it is `~/.local/share/horizon/` (full paths below; on other systems it is the folder with `saves/` and `options.txt`):
+   ```sh
+   cp content/target/horizon-mod/kinetics.hmod ~/.local/share/horizon/horizon-mods/kinetics.hmod
+   cp native/target/kinetics-0.1.0.hnmod ~/.local/share/horizon/horizon-native-mods/kinetics-0.1.0.hnmod
+   ```
 3. In the launcher, turn **Native mods** on and press **Build**. Native mods run with full access to your computer, so read the source first.
 4. Start the game. Kinetics has its own creative tab.
 
@@ -43,11 +45,11 @@ By default Kinetics uses plain vanilla textures. Create's models and textures ar
    ```
    Options: `--out` (zip path), `--mod-out` (hmod path), `--content` (content folder).
 3. It writes two files into the game folder:
-   - `resourcepacks/kinetics-create-look.zip`: Create models for blocks in the world.
-   - `kinetics-create-look.hmod`: a personal copy of the mod that also fixes inventory and creative-tab icons.
+   - `~/.local/share/horizon/resourcepacks/kinetics-create-look.zip`: Create models for blocks in the world.
+   - `~/.local/share/horizon/kinetics-create-look.hmod`: a personal copy of the mod that also fixes inventory and creative-tab icons.
 4. Use it:
    - World look only: enable the zip in **Resource Packs**.
-   - World and icons: put `kinetics-create-look.hmod` in `horizon-mods/` instead of `kinetics.hmod` (only one mod with id `kinetics`). Keep the `.hnmod`. You don't need the zip then.
+   - World and icons: move `~/.local/share/horizon/kinetics-create-look.hmod` to `~/.local/share/horizon/horizon-mods/` and delete `kinetics.hmod` there (only one mod with id `kinetics`). Keep the `.hnmod`. You don't need the zip then.
 5. To go back: disable the pack and restore the normal `kinetics.hmod`.
 
 **Never upload, release or commit the generated files**: they contain Create's assets.
