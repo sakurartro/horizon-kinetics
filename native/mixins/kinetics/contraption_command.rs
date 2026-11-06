@@ -34,5 +34,6 @@ fn kinetics_contraption_command(
         speed: c::SPEED,
         extra: Some(c::Glue::new(from, to)),
         feedback: true,
+        owner: None,
     });
 }

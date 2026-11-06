@@ -20,6 +20,12 @@ pub const MARKER_TAG: &str = "kinetics.contraption";
 pub const PIECE_TAG: &str = "kinetics.contraption_piece";
 /// A glued box is a `marker` entity with this tag and `min`, `max` in its `data` (saved with its chunk, like the contraptions).
 pub const GLUE_TAG: &str = "kinetics.glue";
+pub const PISTON: &str = "kinetics:mechanical_piston";
+pub const POLE: &str = "kinetics:piston_extension_pole";
+/// The piston's block entity key: 1 while its structure is at the far end of the poles.
+pub const EXTENDED_KEY: &str = "Extended";
+/// Poles a piston counts (Create's `maxPoleLength`-ish; each pole is a block of reach).
+pub const MAX_POLES: i32 = 64;
 pub const GLUE_ITEM: &str = "kinetics:super_glue";
 /// Blocks in one contraption. Create allows 2048; each block is an entity here, so start low for weak PCs.
 pub const LIMIT: usize = 256;
@@ -139,6 +145,11 @@ pub fn cells(at: [f64; 3]) -> Vec<Pos> {
     out
 }
 
+/// `MechanicalPistonBlockEntity.getMovementSpeed`: blocks a tick from the RPM (`convertToLinear` is RPM / 512), at most .49.
+pub fn piston_speed(rpm: f32) -> f64 {
+    f64::from(rpm / 512.0).clamp(-0.49, 0.49)
+}
+
 /// A moving drill works only facing the way it goes (Create's `VecHelper.isVecPointingTowards`).
 pub fn drills_toward(facing: Pos, motion: [f64; 3]) -> bool {
     (0..3).map(|i| f64::from(facing[i]) * motion[i]).sum::<f64>() > 0.0
@@ -230,6 +241,8 @@ pub struct Request {
     pub speed: f64,
     pub extra: Option<Glue>,
     pub feedback: bool,
+    /// A piston and the `EXTENDED` value it gets once the request is taken (a refused one leaves it as it was).
+    pub owner: Option<(Pos, i32)>,
 }
 
 pub static REQUESTS: std::sync::Mutex<Vec<Request>> = std::sync::Mutex::new(Vec::new());
@@ -346,6 +359,13 @@ mod tests {
         // 1/16 block a tick: Create's animation speed 100, break speed 0.2.
         assert_eq!(drill_rpm(SPEED), 20.0);
         assert_eq!(drill_rpm(0.0), 100.0 / 128.0);
+    }
+
+    #[test]
+    fn piston_speeds() {
+        assert_eq!(piston_speed(16.0), 1.0 / 32.0);
+        assert_eq!(piston_speed(-256.0), -0.49);
+        assert_eq!(piston_speed(0.0), 0.0);
     }
 
     #[test]

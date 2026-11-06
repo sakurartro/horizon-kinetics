@@ -1,0 +1,40 @@
+{
+  "variants": {
+    "facing=down,waterlogged=false": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=down,waterlogged=true": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=east,waterlogged=false": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=east,waterlogged=true": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=north,waterlogged=false": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=north,waterlogged=true": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=south,waterlogged=false": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=south,waterlogged=true": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=up,waterlogged=false": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=up,waterlogged=true": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=west,waterlogged=false": {
+      "model": "kinetics:block/mechanical_piston"
+    },
+    "facing=west,waterlogged=true": {
+      "model": "kinetics:block/mechanical_piston"
+    }
+  }
+}

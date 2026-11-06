@@ -165,6 +165,11 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
         for p in &blocks {
             game.native_set_block(&r.dimension, *p, air, c::REMOVE_FLAGS);
         }
+        if let Some((p, value)) = r.owner {
+            if let Some(BlockEntity::Mod(m)) = game.world.block_entities.get_mut(&(p[0], p[1], p[2])) {
+                m.nbt.insert(JavaString::from(c::EXTENDED_KEY), Tag::Int(value));
+            }
+        }
         say(game, format!("{} blocks move by {:?}", blocks.len(), r.by));
     }
 
