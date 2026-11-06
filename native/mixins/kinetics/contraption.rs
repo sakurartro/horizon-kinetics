@@ -121,6 +121,71 @@ pub fn step(offset: [f64; 3], target: [f64; 3], speed: f64) -> [f64; 3] {
     [0, 1, 2].map(|i| offset[i] + d[i] / len * speed)
 }
 
+/// The cells a block whose corner is at `at` overlaps: two along an axis it is between cells on.
+pub fn cells(at: [f64; 3]) -> Vec<Pos> {
+    const EPS: f64 = 1e-6;
+    let span = |v: f64| (v + EPS).floor() as i32..=(v + 1.0 - EPS).floor() as i32;
+    let mut out = Vec::new();
+    for x in span(at[0]) {
+        for y in span(at[1]) {
+            for z in span(at[2]) {
+                out.push([x, y, z]);
+            }
+        }
+    }
+    out
+}
+
+/// A moving drill works only facing the way it goes (Create's `VecHelper.isVecPointingTowards`).
+pub fn drills_toward(facing: Pos, motion: [f64; 3]) -> bool {
+    (0..3).map(|i| f64::from(facing[i]) * motion[i]).sum::<f64>() > 0.0
+}
+
+/// A moving drill's break speed (`BlockBreakingMovementBehaviour.getBlockBreakingSpeed` from
+/// `MovementContext.getAnimationSpeed`), as the RPM `kinetics_drill::step` takes (it breaks at RPM / 100).
+pub fn drill_rpm(blocks_per_tick: f64) -> f32 {
+    let len = blocks_per_tick.abs();
+    let anim = if len < 1.0 / 512.0 { 0.0 } else { ((len * 1000.0 + 100.0) as i32 / 100 * 100) as f32 };
+    (anim / 500.0).clamp(1.0 / 128.0, 16.0) * 100.0
+}
+
+/// What a block in the way is to a contraption: solid ones (`BlockState.isSolid`) stop it, breakable ones a drill
+/// takes (`kinetics_drill::breakable`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct InWay {
+    pub solid: bool,
+    pub breakable: bool,
+}
+
+/// The way of one step (Create's `ContraptionCollider.isCollidingWithWorld` and the drills' `visitNewPosition`).
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct Way {
+    /// A solid block no drill takes: the contraption can't go.
+    pub blocked: bool,
+    /// (piece, cell): each drill's first block to break before the contraption goes on.
+    pub drill: Vec<(usize, Pos)>,
+}
+
+/// `pieces`: each block's corner after the step and whether it is a drill working along this motion.
+pub fn way(pieces: &[([f64; 3], bool)], mut world: impl FnMut(Pos) -> InWay) -> Way {
+    let mut w = Way::default();
+    for (i, &(at, drill)) in pieces.iter().enumerate() {
+        let mut drilling = false;
+        for c in cells(at) {
+            let b = world(c);
+            if drill && b.breakable {
+                if !drilling {
+                    w.drill.push((i, c));
+                    drilling = true;
+                }
+            } else if b.solid {
+                w.blocked = true;
+            }
+        }
+    }
+    w
+}
+
 /// Where a block lands when the contraption stops (`addBlocksToWorld`: the offset rounded).
 pub fn landing(origin: Pos, offset: [f64; 3], rel: Pos) -> Pos {
     [0, 1, 2].map(|i| origin[i] + offset[i].round() as i32 + rel[i])
@@ -227,6 +292,41 @@ mod tests {
         assert_eq!(n, 80);
         assert_eq!(landing([10, 64, 10], o, [1, 0, -1]), [16, 64, 9]);
         assert_eq!(landing([0, 0, 0], [2.4, -0.6, 0.0], [0, 0, 0]), [2, -1, 0]);
+    }
+
+    #[test]
+    fn cells_a_block_overlaps() {
+        assert_eq!(cells([1.0, 2.0, 3.0]), vec![[1, 2, 3]]);
+        assert_eq!(cells([1.0625, 2.0, -0.5]), vec![[1, 2, -1], [1, 2, 0], [2, 2, -1], [2, 2, 0]]);
+    }
+
+    #[test]
+    fn drills_dig_and_the_rest_stops() {
+        let stone = InWay { solid: true, breakable: true };
+        let grass = InWay { solid: false, breakable: true };
+        let bedrock = InWay { solid: true, breakable: false };
+        let world = |rock: InWay| move |c: Pos| if c[0] >= 2 { rock } else { InWay::default() };
+        // A drill at x 0 and a block behind it, moving +x by 1/16 into stone at x 2: free until it touches.
+        let at = |dx: f64| [([dx, 0.0, 0.0], true), ([dx - 1.0, 0.0, 0.0], false)];
+        assert_eq!(way(&at(1.0), world(stone)), Way::default());
+        assert_eq!(way(&at(1.0625), world(stone)), Way { blocked: false, drill: vec![(0, [2, 0, 0])] });
+        assert_eq!(way(&at(1.0625), world(bedrock)), Way { blocked: true, drill: vec![] });
+        // No drill: stone stops it, grass doesn't.
+        let plain = [([1.0625, 0.0, 0.0], false)];
+        assert!(way(&plain, world(stone)).blocked);
+        assert_eq!(way(&plain, world(grass)), Way::default());
+        // A drill takes grass too (Create breaks whatever it enters).
+        assert_eq!(way(&at(1.0625), world(grass)).drill, vec![(0, [2, 0, 0])]);
+    }
+
+    #[test]
+    fn moving_drills() {
+        assert!(drills_toward([1, 0, 0], [SPEED, 0.0, 0.0]));
+        assert!(!drills_toward([-1, 0, 0], [SPEED, 0.0, 0.0]));
+        assert!(!drills_toward([0, 1, 0], [SPEED, 0.0, 0.0]));
+        // 1/16 block a tick: Create's animation speed 100, break speed 0.2.
+        assert_eq!(drill_rpm(SPEED), 20.0);
+        assert_eq!(drill_rpm(0.0), 100.0 / 128.0);
     }
 
     #[test]

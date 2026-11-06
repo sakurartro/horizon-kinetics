@@ -1,6 +1,7 @@
 // At the end of each level's tick, the contraptions in it (contraption.rs): each marker gets its displays (again,
 // after a reload or its chunk coming back: entity ids change, so tagged displays no contraption holds are removed),
-// then moves a step toward its target and, there, puts its blocks back into the world (Create's
+// then moves a step toward its target (or waits while its drills break what is in the way, or for good against a
+// solid block) and, there, puts its blocks back into the world (Create's
 // `Contraption.addBlocksToWorld`; a block whose place is taken drops as an item) and goes.
 fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) {
     use crate::game::kinetics_contraption as c;
@@ -48,7 +49,7 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
         l: &mut crate::game::kinetics_contraption::Live,
         alive: &std::collections::HashSet<u32>,
     ) -> bool {
-        use crate::game::kinetics_contraption as c;
+        use crate::game::{kinetics_contraption as c, kinetics_drill as d, kinetics_motor as m};
         use horizon_world::nbt::Tag;
         let Some(data) = game.persist.raw.get(&l.marker).and_then(|t| t.get("data")).cloned() else {
             return false;
@@ -108,6 +109,25 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
         }) {
             return true;
         }
+        // What is in the way (BUR.md phase 3): drills facing the motion break what they enter while it waits
+        // (Create's `BlockBreakingMovementBehaviour`), a solid block anything else touches stops it.
+        let motion = [0, 1, 2].map(|i| next[i] - offset[i]);
+        let facing = |p: &Tag| match p.get("state").map(|s| (s.get("Name"), s.get("Properties").and_then(|x| x.get("facing")))) {
+            Some((Some(Tag::String(n)), Some(Tag::String(f)))) if n.to_string_lossy() == d::BLOCK => m::dir_vec(&f.to_string_lossy()),
+            _ => None,
+        };
+        let pieces: Vec<([f64; 3], bool)> =
+            list.iter().map(|p| (at(next, rel(p)), facing(p).is_some_and(|f| c::drills_toward(f, motion)))).collect();
+        let way = c::way(&pieces, |q| {
+            let f = game.res.facts().get(game.world.block(q[0], q[1], q[2]));
+            c::InWay { solid: f.legacy_solid, breakable: d::breakable(&f.name, f.hardness, f.has_class("LiquidBlock")) }
+        });
+        if way.blocked || !way.drill.is_empty() {
+            for (i, cell) in way.drill {
+                c_drill(game, l.marker, i, &list[i], cell, c::drill_rpm(c::SPEED));
+            }
+            return true;
+        }
         game.native_move_entity(dimension, l.marker, at(next, [0; 3]), 0.0, 0.0);
         for (id, p) in l.displays.iter().zip(list) {
             game.native_move_entity(dimension, *id, at(next, rel(p)), 0.0, 0.0);
@@ -116,6 +136,54 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
             d.insert("offset".into(), Tag::List(next.iter().map(|x| Tag::Double(x.to_bits())).collect()));
         }
         true
+    }
+
+    /// One tick of a moving drill (piece `i`) on `cell`: drill_tick.rs's crack, sound and break, with the breaker
+    /// kept in the piece as [progress, next, x, y, z]; a new cell starts it again (Create's `visitNewPosition`).
+    fn c_drill(game: &mut crate::game::Game<'_>, marker: u32, i: usize, piece: &horizon_world::nbt::Tag, cell: [i32; 3], rpm: f32) {
+        use crate::game::kinetics_drill as d;
+        use horizon_world::nbt::Tag;
+        let mut b = match piece.get("breaker") {
+            Some(Tag::IntArray(v)) if v.len() == 5 && v[2..] == cell[..] => d::Breaker { progress: v[0], next: v[1] },
+            _ => d::Breaker::default(),
+        };
+        let facts = game.res.facts().get(game.world.block(cell[0], cell[1], cell[2]));
+        let hardness = d::breakable(&facts.name, facts.hardness, facts.has_class("LiquidBlock")).then_some(facts.hardness);
+        let hit = facts.sounds.hit.clone();
+        let step = d::step(&mut b, rpm, hardness);
+        if let Some(Tag::List(ps)) = game.persist.raw.get_mut(&marker).and_then(|t| t.get_mut("data")).and_then(|x| x.get_mut("pieces")) {
+            if let Some(Tag::Compound(pc)) = ps.get_mut(i) {
+                pc.insert("breaker".into(), Tag::IntArray(vec![b.progress, b.next, cell[0], cell[1], cell[2]]));
+            }
+        }
+        let crack = match step {
+            d::Step::Idle => return,
+            d::Step::Reset | d::Step::Broken => -1,
+            d::Step::Hit(stage) => stage,
+        };
+        if step != d::Step::Reset {
+            let at = cell.map(|v| f64::from(v) + 0.5);
+            // SoundSource 4 is `block`.
+            game.with_level(|_, level, _| level.native_play_sound(&hit, at, 4, 0.25, 1.0));
+        }
+        let id = d::breaker_id(cell);
+        game.destroy_block_progress(id, cell, crack);
+        if let Some(host) = game.lan.as_ref() {
+            host.hub.broadcast_near(
+                cell.map(f64::from),
+                64.0,
+                &horizon_protocol::packets::play::Clientbound::BlockDestruction(horizon_protocol::packets::play::BlockDestruction {
+                    id,
+                    pos: cell,
+                    progress: if (0..10).contains(&crack) { crack as u8 } else { 255 },
+                }),
+                None,
+            );
+        }
+        if step == d::Step::Broken {
+            // An error here is the level's events after the break, which the game itself only reports.
+            let _ = game.destroy_block_dropping(cell);
+        }
     }
 
     /// Puts the blocks back where the offset rounds to, then removes the displays and the marker: false.
