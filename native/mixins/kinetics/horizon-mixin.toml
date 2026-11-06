@@ -1015,3 +1015,73 @@ bindings = [
   { name = "pos", ty = "[i32; 3]", value = "pos" },
   { name = "claimed", ty = "&mut bool", value = "&mut *claimed" },
 ]
+
+# The mechanical drill. A new block `kinetics:mechanical_drill` with a `facing`: its rules are in drill.rs (module
+# `kinetics_drill`), the injections below are its hooks. The solver treats it as a consumer with its shaft at the
+# back (runtime.rs `kind_of`, settle.rs), its stress impact is in stress.rs.
+[[module]]
+id = "drill"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_drill"
+source = "drill.rs"
+
+# Placed with its back to a shaft beside it, else its head toward the player.
+[[injection]]
+id = "drill-place"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::GameLevel<'_>::native_state_for_placement"
+helper = "drill_place.rs"
+bindings = [
+  { name = "level", ty = "&GameLevel<'_>", value = "&*self" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "context", ty = "&PlacementContext", value = "context" },
+  { name = "answer", ty = "&mut Option<Option<BlockStateId>>", value = "&mut *answer" },
+]
+
+# Every tick of a drill: it hits and breaks the block in front of it.
+[[injection]]
+id = "drill-tick"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_tick"
+helper = "drill_tick.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "entity", ty = "&mut ModBlockEntity", value = "&mut *entity" },
+]
+
+# The drills' block entities ask to tick.
+[[injection]]
+id = "drill-ticks"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_ticks"
+helper = "drill_ticks.rs"
+bindings = [
+  { name = "block", ty = "&str", value = "block" },
+  { name = "ticks", ty = "&mut bool", value = "&mut *ticks" },
+]
+
+# The drill's body and head, baked beside the block models.
+[[injection]]
+id = "drill-models"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_standalone_models"
+helper = "drill_models.rs"
+bindings = [
+  { name = "models", ty = "&mut Vec<String>", value = "&mut *models" },
+]
+
+# Each frame: the body and the turning head.
+[[injection]]
+id = "drill-submit"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_block_entity_submit"
+helper = "drill_submit.rs"
+bindings = [
+  { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
+  { name = "pos", ty = "[i32; 3]", value = "pos" },
+  { name = "block", ty = "&str", value = "block" },
+  { name = "state", ty = "BlockStateId", value = "state" },
+  { name = "entity", ty = "&ModBlockEntity", value = "entity" },
+  { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
+]

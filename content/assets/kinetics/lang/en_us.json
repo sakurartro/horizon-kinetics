@@ -36,5 +36,6 @@
   "itemGroup.kinetics.kinetics": "Kinetics",
   "block.kinetics.water_wheel": "Water Wheel",
   "block.kinetics.large_water_wheel": "Large Water Wheel",
-  "block.kinetics.water_wheel_structure": "Large Water Wheel"
+  "block.kinetics.water_wheel_structure": "Large Water Wheel",
+  "block.kinetics.mechanical_drill": "Mechanical Drill"
 }

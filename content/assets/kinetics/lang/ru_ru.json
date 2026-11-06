@@ -36,5 +36,6 @@
   "itemGroup.kinetics.kinetics": "Кинетика",
   "block.kinetics.water_wheel": "Водяное колесо",
   "block.kinetics.large_water_wheel": "Большое водяное колесо",
-  "block.kinetics.water_wheel_structure": "Большое водяное колесо"
+  "block.kinetics.water_wheel_structure": "Большое водяное колесо",
+  "block.kinetics.mechanical_drill": "Механический бур"
 }
