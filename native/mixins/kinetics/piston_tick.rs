@@ -28,7 +28,7 @@ fn kinetics_piston_tick(game: &mut crate::game::Game<'_>, pos: [i32; 3], entity:
     let mut reach = 0;
     while reach < c::MAX_POLES {
         let at = [pos[0] - f[0] * (reach + 1), pos[1] - f[1] * (reach + 1), pos[2] - f[2] * (reach + 1)];
-        if game.res.facts().get(game.world.block(at[0], at[1], at[2])).name != c::POLE {
+        if game.res.facts().get(game.world.block(at[0], at[1], at[2])).name.as_ref() != c::POLE {
             break;
         }
         reach += 1;
