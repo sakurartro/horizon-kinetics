@@ -11,13 +11,31 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
         _ => false,
     };
     let mut markers = Vec::new();
+    let mut glues = Vec::new();
     let mut pieces = std::collections::HashSet::new();
     for o in &game.others {
-        if o.kind == "minecraft:marker" && tagged(game.persist.raw.get(&o.id), c::MARKER_TAG) {
+        if o.kind == "minecraft:marker" && tagged(game.persist.raw.get(&o.id), c::GLUE_TAG) {
+            let corner = |key: &str| match game.persist.raw.get(&o.id).and_then(|t| t.get("data")).and_then(|d| d.get(key)) {
+                Some(Tag::IntArray(v)) if v.len() == 3 => Some([v[0], v[1], v[2]]),
+                _ => None,
+            };
+            if let (Some(a), Some(b)) = (corner("min"), corner("max")) {
+                glues.push((o.id, c::Glue::new(a, b)));
+            }
+        } else if o.kind == "minecraft:marker" && tagged(game.persist.raw.get(&o.id), c::MARKER_TAG) {
             markers.push(o.id);
         } else if o.kind == "minecraft:block_display" && tagged(game.persist.raw.get(&o.id), c::PIECE_TAG) {
             pieces.insert(o.id);
         }
+    }
+    let wanted: Vec<c::Request> = {
+        let mut all = c::REQUESTS.lock().unwrap();
+        let (mine, rest): (Vec<c::Request>, Vec<c::Request>) = all.drain(..).partition(|r| r.dimension == dimension);
+        *all = rest;
+        mine
+    };
+    for r in wanted {
+        c_assemble(game, &r, &mut glues);
     }
     let mut mine: Vec<c::Live> = {
         let mut all = c::LIVE.lock().unwrap();
@@ -41,6 +59,114 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
     }
     mine.retain_mut(|l| c_run(game, dimension, l, &pieces));
     c::LIVE.lock().unwrap().extend(mine);
+
+    /// Create's `Contraption.assemble`, then `removeBlocksFromWorld`: the snapshot is written into the marker before any
+    /// block leaves the world, in the same tick, so a save never sees one without the other. The glue boxes it
+    /// used travel in the snapshot and come back where it lands.
+    fn c_assemble(
+        game: &mut crate::game::Game<'_>,
+        r: &crate::game::kinetics_contraption::Request,
+        glues: &mut Vec<(u32, crate::game::kinetics_contraption::Glue)>,
+    ) {
+        use crate::game::{kinetics as k, kinetics_contraption as c};
+        use horizon_world::nbt::{JavaString, Tag};
+        let from = r.anchor;
+        let mut boxes: Vec<c::Glue> = glues.iter().map(|g| g.1).collect();
+        boxes.extend(r.extra);
+        let found = c::collect(
+            from,
+            &boxes,
+            |p| {
+                let facts = game.res.facts().get(game.world.block(p[0], p[1], p[2]));
+                let foreign = matches!(game.world.block_entities.get(&(p[0], p[1], p[2])), Some(e) if !matches!(e, BlockEntity::Mod(_)));
+                c::movable(&facts.name, facts.hardness, facts.has_class("LiquidBlock"), foreign)
+            },
+            c::LIMIT,
+        );
+        let say = |game: &mut crate::game::Game<'_>, text: String| {
+            if r.feedback {
+                game.native_feedback(Text::literal(text));
+            }
+        };
+        let blocks = match found {
+            Ok(b) => b,
+            Err(why) => {
+                let text = match why {
+                    c::Refusal::NothingThere => format!("no block at {from:?} to start from"),
+                    c::Refusal::Unmovable(p) => format!("the block at {p:?} can't move"),
+                    c::Refusal::TooMany => format!("more than {} blocks", c::LIMIT),
+                };
+                say(game, text);
+                return;
+            }
+        };
+        let registry = game.pack.assets.registry;
+        let Some(air) = registry.default_state("minecraft:air") else { return };
+        // Each block's place from the anchor, its state as `block_state` takes it, and our block entity's data
+        // without its speed (the network is solved again where it lands).
+        let mut pieces = Vec::new();
+        for p in &blocks {
+            let state = game.world.block(p[0], p[1], p[2]);
+            let mut piece = Compound::new();
+            piece.insert("pos".into(), Tag::IntArray((0..3).map(|i| p[i] - from[i]).collect()));
+            // `{Name, Properties}`, as a `block_display` and `state_from_nbt` read it.
+            let mut t = Compound::new();
+            if let Some(s) = registry.state(state) {
+                t.insert("Name".into(), Tag::String(s.name.as_str().into()));
+                let props = s.properties.iter().map(|(k, v)| (k.as_str().into(), Tag::String(v.as_str().into()))).collect();
+                t.insert("Properties".into(), Tag::Compound(props));
+            }
+            piece.insert("state".into(), Tag::Compound(t));
+            if let Some(BlockEntity::Mod(m)) = game.world.block_entities.get(&(p[0], p[1], p[2])) {
+                let mut nbt = m.nbt.clone();
+                nbt.remove(&JavaString::from(k::SPEED_KEY));
+                piece.insert("nbt".into(), Tag::Compound(nbt));
+            }
+            pieces.push(Tag::Compound(piece));
+        }
+        // The glue boxes that hold any of these blocks go with them.
+        let mut taken = Vec::new();
+        let mut kept = Vec::new();
+        for (id, g) in glues.drain(..) {
+            if blocks.iter().any(|&p| g.contains(p)) {
+                taken.push((id, g));
+            } else {
+                kept.push((id, g));
+            }
+        }
+        *glues = kept;
+        let doubles = |v: [f64; 3]| Tag::List(v.iter().map(|x| Tag::Double(x.to_bits())).collect());
+        let mut data = Compound::new();
+        data.insert("origin".into(), Tag::IntArray(from.to_vec()));
+        data.insert("offset".into(), doubles([0.0; 3]));
+        data.insert("target".into(), doubles(r.by.map(f64::from)));
+        data.insert("speed".into(), Tag::Double(r.speed.to_bits()));
+        data.insert("pieces".into(), Tag::List(pieces));
+        data.insert(
+            "glue".into(),
+            Tag::List(
+                taken
+                    .iter()
+                    .map(|(_, g)| Tag::IntArray((0..3).map(|i| g.min[i] - from[i]).chain((0..3).map(|i| g.max[i] - from[i])).collect()))
+                    .collect(),
+            ),
+        );
+        let mut nbt = Compound::new();
+        nbt.insert("Tags".into(), Tag::List(vec![Tag::String(c::MARKER_TAG.into())]));
+        nbt.insert("data".into(), Tag::Compound(data));
+        if game.native_summon(&r.dimension, "minecraft:marker", from.map(f64::from), nbt).is_none() {
+            say(game, "the marker couldn't be made here".to_string());
+            return;
+        }
+        for (id, _) in taken {
+            game.native_remove_entity(&r.dimension, id);
+        }
+        // Its displays come at this tick's end. Create's flags: no drops, no shape updates (a torch on it stays put).
+        for p in &blocks {
+            game.native_set_block(&r.dimension, *p, air, c::REMOVE_FLAGS);
+        }
+        say(game, format!("{} blocks move by {:?}", blocks.len(), r.by));
+    }
 
     /// One contraption's tick: false once it is put back (or its marker can't be read).
     fn c_run(
@@ -99,9 +225,13 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
             }
         }
         if offset == target {
-            return c_place(game, dimension, l, origin, offset, list);
+            return c_place(game, dimension, l, origin, offset, list, &data);
         }
-        let next = c::step(offset, target, c::SPEED);
+        let speed = match data.get("speed") {
+            Some(Tag::Double(b)) => f64::from_bits(*b),
+            _ => c::SPEED,
+        };
+        let next = c::step(offset, target, speed);
         // Stop at the edge of the loaded world: an entity in a chunk that isn't loaded is never saved.
         if !list.iter().all(|p| {
             let q = at(next, rel(p));
@@ -124,7 +254,7 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
         });
         if way.blocked || !way.drill.is_empty() {
             for (i, cell) in way.drill {
-                c_drill(game, l.marker, i, &list[i], cell, c::drill_rpm(c::SPEED));
+                c_drill(game, l.marker, i, &list[i], cell, c::drill_rpm(speed));
             }
             return true;
         }
@@ -194,6 +324,7 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
         origin: [i32; 3],
         offset: [f64; 3],
         list: &[horizon_world::nbt::Tag],
+        data: &horizon_world::nbt::Tag,
     ) -> bool {
         use crate::game::kinetics_contraption as c;
         use horizon_world::nbt::Tag;
@@ -223,6 +354,24 @@ fn kinetics_contraption_tick(game: &mut crate::game::Game<'_>, dimension: &str) 
             let mut nbt = Compound::new();
             nbt.insert("Item".into(), Tag::Compound(item));
             game.native_summon(dimension, "minecraft:item", at.map(|v| f64::from(v) + 0.5), nbt);
+        }
+        // The glue comes back where the blocks are.
+        if let Some(Tag::List(boxes)) = data.get("glue") {
+            let at = |v: &[i32], k: usize| [0, 1, 2].map(|i| c::landing(origin, offset, [0; 3])[i] + v[k + i]);
+            for b in boxes {
+                if let Tag::IntArray(v) = b {
+                    if v.len() == 6 {
+                        let (min, max) = (at(v, 0), at(v, 3));
+                        let mut d = Compound::new();
+                        d.insert("min".into(), Tag::IntArray(min.to_vec()));
+                        d.insert("max".into(), Tag::IntArray(max.to_vec()));
+                        let mut nbt = Compound::new();
+                        nbt.insert("Tags".into(), Tag::List(vec![Tag::String(c::GLUE_TAG.into())]));
+                        nbt.insert("data".into(), Tag::Compound(d));
+                        game.native_summon(dimension, "minecraft:marker", min.map(f64::from), nbt);
+                    }
+                }
+            }
         }
         for id in l.displays.drain(..) {
             game.native_remove_entity(dimension, id);

@@ -18,6 +18,9 @@ pub type Pos = [i32; 3];
 
 pub const MARKER_TAG: &str = "kinetics.contraption";
 pub const PIECE_TAG: &str = "kinetics.contraption_piece";
+/// A glued box is a `marker` entity with this tag and `min`, `max` in its `data` (saved with its chunk, like the contraptions).
+pub const GLUE_TAG: &str = "kinetics.glue";
+pub const GLUE_ITEM: &str = "kinetics:super_glue";
 /// Blocks in one contraption. Create allows 2048; each block is an entity here, so start low for weak PCs.
 pub const LIMIT: usize = 256;
 /// Blocks a tick the debug command moves at.
@@ -214,6 +217,22 @@ pub struct Live {
 }
 
 pub static LIVE: std::sync::Mutex<Vec<Live>> = std::sync::Mutex::new(Vec::new());
+
+/// The first corner a player clicked with the glue, waiting for the second: (dimension, block).
+pub static PENDING: std::sync::Mutex<Option<(String, Pos)>> = std::sync::Mutex::new(None);
+
+/// A contraption to assemble at the next tick (made by the debug command and the piston): from `anchor`, moving by
+/// `by` at `speed` blocks a tick, glued by the glue markers and `extra`.
+pub struct Request {
+    pub dimension: String,
+    pub anchor: Pos,
+    pub by: Pos,
+    pub speed: f64,
+    pub extra: Option<Glue>,
+    pub feedback: bool,
+}
+
+pub static REQUESTS: std::sync::Mutex<Vec<Request>> = std::sync::Mutex::new(Vec::new());
 
 pub fn forget(dimension: &str) {
     LIVE.lock().unwrap().retain(|l| l.dimension != dimension);
