@@ -162,8 +162,15 @@ def main():
         if entry not in names:
             sys.exit(f"{a.jar.name} has no {entry}: another Create version?")
         data = jar.read(entry)
-        files[entry] = data
         m = json.loads(data)
+        if path == "block/gearbox/block":  # the core stops 0.95 short of the box edge: lying on its side, that gap is see-through
+            core = m["elements"][1]
+            core["from"][0] = core["from"][2] = 0.01
+            core["to"][0] = core["to"][2] = 15.99
+            for face in core["faces"].values():
+                face["uv"] = [0, 2, 16, 14]
+            data = json.dumps(m, indent=2).encode()
+        files[entry] = data
         supported = True
         if "loader" in m:
             print(f"warning: {entry} uses NeoForge loader {m['loader']!r}, which Horizon may not draw", file=sys.stderr)
