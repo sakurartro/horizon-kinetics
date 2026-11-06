@@ -1085,3 +1085,54 @@ bindings = [
   { name = "entity", ty = "&ModBlockEntity", value = "entity" },
   { name = "draw", ty = "&mut BlockEntityDraw", value = "&mut *draw" },
 ]
+
+# Contraptions (BUR.md phase 2): blocks taken out of the world move as displays and are put back. The rules and the
+# ids kept in memory are contraption.rs (module `kinetics_contraption`); the snapshot is a marker entity's data.
+[[module]]
+id = "contraption"
+file = "crates/horizon-client/src/game.rs"
+name = "kinetics_contraption"
+source = "contraption.rs"
+
+# The debug command until the piston and the glue come: registered for operators, run on the server.
+[[injection]]
+id = "contraption-commands"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_register_commands"
+helper = "contraption_commands.rs"
+bindings = [
+  { name = "commands", ty = "&mut Vec<NativeCommand>", value = "&mut *commands" },
+]
+
+[[injection]]
+id = "contraption-command"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_perform_command"
+helper = "contraption_command.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "player", ty = "&NativeServerPlayer", value = "player" },
+  { name = "command", ty = "&str", value = "command" },
+  { name = "ran", ty = "&mut bool", value = "&mut *ran" },
+]
+
+# At the end of each level's tick: displays made, steps, blocks put back.
+[[injection]]
+id = "contraption-tick"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_tick_post"
+helper = "contraption_tick.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+# A level opened: its entity ids are new.
+[[injection]]
+id = "contraption-load"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_level_load"
+helper = "contraption_load.rs"
+bindings = [
+  { name = "dimension", ty = "&str", value = "dimension" },
+]

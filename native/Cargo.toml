@@ -92,3 +92,8 @@ path = "mixins/kinetics/drill.rs"
 [[test]]
 name = "assist"
 path = "mixins/kinetics/assist.rs"
+
+# Contraptions' pure rules (assembly, motion), also added to the game as `game::kinetics_contraption`.
+[[test]]
+name = "contraption"
+path = "mixins/kinetics/contraption.rs"
